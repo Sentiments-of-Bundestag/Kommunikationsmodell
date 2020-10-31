@@ -10,7 +10,7 @@ This is pretty much work in progress. You can have a look into the examples fold
 
 ## Supporter
 
-Max Lüdemann
-Ralph Schlett
-Oskar Sailer
-Youri Seichter
+* Max Lüdemann
+* Ralph Schlett
+* Oskar Sailer
+* Youri Seichter
