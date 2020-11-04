@@ -5,8 +5,9 @@ from pathlib import Path
 
 from cme.data import read_xml_transcript
 from cme.extraction import extract_communication_model
+from cme import utils, database
 
-
+database.get_db()
 logging.basicConfig(level=logging.INFO)
 
 
@@ -19,6 +20,10 @@ def manual_mode(args):
         transcript["interactions"] = interactions
         transcript["factions"] = f_map
         transcript["speakers"] = s_map
+
+        # TODO: only insert interactions, skip factions & speakers
+        session_id = utils.get_session_id_safe(str(transcript['legislative_period']), str(transcript['session_no']))
+        utils.run_async(database.update_one("session", {"session_id": session_id}, transcript))
 
         with open(file.with_suffix(".json"), "w", encoding="utf-8") as o:
             json.dump({"transcripts": [transcript]}, o, indent=4, ensure_ascii=False)

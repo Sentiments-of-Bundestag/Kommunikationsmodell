@@ -60,7 +60,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[TopicParagraph]:
                 curr_speaker = {
                     "first_name": first_name,
                     "last_name": last_name,
-                    "fraction": "",
+                    "faction": "",
                     "full_role": role,
                     "role": role}
             elif el.name == "rede":
@@ -72,7 +72,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[TopicParagraph]:
                     curr_speaker = {
                         "first_name": _safe_get_text(el.redner, "vorname"),
                         "last_name": _safe_get_text(el.redner, "nachname"),
-                        "fraction": _safe_get_text(el.redner, "fraktion"),
+                        "faction": _safe_get_text(el.redner, "fraktion"),
                         "full_role": _safe_get_text(el.redner, "rolle_lang"),
                         "role": _safe_get_text(el.redner, "rolle_kurz")}
                 elif category in ["J", "J_1", "O"]:
@@ -117,7 +117,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[TopicParagraph]:
     return pms
 
 
-def read_xml_transcript(xml_file: Path):
+def read_xml_transcript(xml_file: Path) -> dict:
     with xml_file.open(mode="rb") as f:
         soup = BeautifulSoup(f, "xml")
 

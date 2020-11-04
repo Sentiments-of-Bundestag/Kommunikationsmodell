@@ -3,8 +3,11 @@ import re
 from enum import Enum
 from typing import Dict, List
 
+from cme import utils, database
+from cme.data.json import read_json_transcript
 
-class PoliticalFractions(Enum):
+
+class PoliticalFactions(Enum):
     DIE_GRÜNEN = "BÜNDNIS 90/DIE GRÜNEN"
     FDP = "FDP"
     DIE_LINKE = "DIE LINKE"
@@ -15,19 +18,19 @@ class PoliticalFractions(Enum):
     @classmethod
     def text_contains(cls, text):
         pos_text_reps = {
-            PoliticalFractions.DIE_GRÜNEN: ["BÜNDNIS 90/DIE GRÜNEN", "BÜNDNIS 90", "DIE GRÜNEN"],
-            PoliticalFractions.FDP: ["FDP"],
-            PoliticalFractions.DIE_LINKE: ["DIE LINKE", "LINKE"],
-            PoliticalFractions.AFD: ["AfD"],
-            PoliticalFractions.CDU_AND_CSU: ["CDU/CSU"],
-            PoliticalFractions.SPD: ["SPD"]
+            PoliticalFactions.DIE_GRÜNEN: ["BÜNDNIS 90/DIE GRÜNEN", "BÜNDNIS 90", "DIE GRÜNEN"],
+            PoliticalFactions.FDP: ["FDP"],
+            PoliticalFactions.DIE_LINKE: ["DIE LINKE", "LINKE"],
+            PoliticalFactions.AFD: ["AfD"],
+            PoliticalFactions.CDU_AND_CSU: ["CDU/CSU"],
+            PoliticalFactions.SPD: ["SPD"]
         }
 
         found = list()
-        for fraction, reps in pos_text_reps.items():
+        for faction, reps in pos_text_reps.items():
             for r in reps:
                 if r in text:
-                    found.append(fraction)
+                    found.append(faction)
                     break
 
         return found
@@ -63,18 +66,18 @@ def build_person_dict(person_str):
         p for p in full_name.split(" ")
         if p not in known_titles]
 
-    fraction = ""
+    faction = ""
     for mp in metadata_parts:
-        found_fractions = PoliticalFractions.text_contains(mp)
-        if found_fractions:
-            assert len(found_fractions) == 1
-            fraction = found_fractions[0].value
+        found_factions = PoliticalFactions.text_contains(mp)
+        if found_factions:
+            assert len(found_factions) == 1
+            faction = found_factions[0].value
             break
 
     return {
         "first_name": " ".join(name_parts[:-1]),
         "last_name": name_parts[-1],
-        "fraction": fraction,
+        "faction": faction,
         "full_role": "",
         "role": ""
     }
@@ -99,7 +102,7 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                 ps, pr = [s.strip() for s in ps.split(",", 1)]
 
                 pr_match = human_sender_re.search(pr)
-                pfr = PoliticalFractions.text_contains(pr)
+                pfr = PoliticalFactions.text_contains(pr)
                 if pr_match:
                     pr = [pr_match.group("person")]
                 elif pfr:
@@ -119,7 +122,7 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                     for curr_pr in pr:
                         if isinstance(curr_pr, str):
                             curr_pr = build_person_dict(curr_pr)
-                        elif isinstance(curr_pr, PoliticalFractions):
+                        elif isinstance(curr_pr, PoliticalFactions):
                             curr_pr = curr_pr.value
 
                         return [(
@@ -132,7 +135,7 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                         None,
                         pm)]
             else:
-                pfs = PoliticalFractions.text_contains(ps)
+                pfs = PoliticalFactions.text_contains(ps)
 
                 if len(pfs) == 0:
                     logging.warning(
@@ -182,7 +185,7 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                         None,
                         text_part))
                 else:
-                    pfs = PoliticalFractions.text_contains(ps)
+                    pfs = PoliticalFactions.text_contains(ps)
 
                     if len(pfs) == 0:
                         logging.warning(
@@ -244,14 +247,16 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
 
 def _fix_sender_and_receivers(interactions):
     next_f_id = 0
-    r_fractions_map = dict()
+    r_factions_map = dict()
     next_p_id = 0
     r_person_map = dict()
 
+    # todo: dont create id's, use id's from faction and MDB collection
+
     def _lookup(obj):
         if isinstance(obj, str):
-            if obj in r_fractions_map:
-                return True, r_fractions_map[obj]
+            if obj in r_factions_map:
+                return True, r_factions_map[obj]
         elif isinstance(obj, dict):
             hashable_obj = tuple(sorted(obj.items()))
             if hashable_obj in r_person_map:
@@ -274,7 +279,7 @@ def _fix_sender_and_receivers(interactions):
                 else:
                     found_id = "F{}".format(next_f_id)
                     next_f_id += 1
-                    r_fractions_map[obj] = found_id
+                    r_factions_map[obj] = found_id
             elif isinstance(obj, dict):
                 found_id = "P{}".format(next_p_id)
                 next_p_id += 1
@@ -300,13 +305,13 @@ def _fix_sender_and_receivers(interactions):
 
         return {v: _rebuild_dict(k) for k, v in dict_obj.items()}
 
-    faction_map = _reverse_dict(r_fractions_map)
+    faction_map = _reverse_dict(r_factions_map)
     speaker_map = _reverse_dict(r_person_map)
 
     for speaker in speaker_map.values():
-        fraction_str = speaker.get("fraction")
-        if fraction_str:
-            speaker["fraction"] = _fix_either(fraction_str)
+        faction_str = speaker.get("faction")
+        if faction_str:
+            speaker["faction"] = _fix_either(faction_str)
 
     return fixed_interactions, faction_map, speaker_map
 
@@ -316,7 +321,19 @@ def extract_communication_model(all_interactions: List[Dict]):
         list(filter(lambda i: i["comment"] is not None, all_interactions)))
 
     # todo: handle inner paragraph comments
-
     interactions, f_map, s_map = _fix_sender_and_receivers(interactions)
 
     return interactions, f_map, s_map
+
+
+def evaluate_newest_sessions(id_list: List[str]):
+    for id in id_list:
+        current_session = utils.get_crawled_session(id)
+        transcript = read_json_transcript(current_session)
+        interactions, f_map, s_map = extract_communication_model(transcript["interactions"])
+        transcript["interactions"] = interactions
+        transcript["factions"] = f_map
+        transcript["speakers"] = s_map
+
+        session_id = utils.get_session_id_safe(str(transcript['legislative_period']), str(transcript['session_no']))
+        utils.run_async(database.update_one("session", {"session_id": session_id}, transcript))

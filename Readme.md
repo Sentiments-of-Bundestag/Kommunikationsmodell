@@ -26,6 +26,19 @@ After the installation `cme` should be available in your path and can than eithe
 
 todo: extend this
 
+## API
+
+Different endpoints:
+* /cm/data/ - for getting notified about updated data and new sessions to evaluate
+* /cm/data/session(s) - offer endpoints to retrieve our evaluated sessions containing a list of interactions between persons & factions 
+
+## Database
+
+- mongoDB
+- install and start as a daemon, accessible through port 27017 
+    mac: brew
+    linux: systemctl
+
 ## Supporter
 
 * Max Lüdemann

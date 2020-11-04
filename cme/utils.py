@@ -1,6 +1,8 @@
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
+import asyncio
 
+from cme.data.json import read_json_transcript
 
 def reverse_dict(dict_obj: Dict) -> Dict:
     def _rebuild_dict(potential_dict: Tuple[Tuple]):
@@ -78,3 +80,27 @@ def split_name_str(person_str) -> Tuple[str, str, str, str]:
     name_parts = [p for p in name_parts if not p.islower()]
 
     return found_role, found_titles, " ".join(name_parts[:-1]), name_parts[-1]
+
+
+def run_async(coro):
+    return asyncio.get_event_loop().run_until_complete(coro)
+
+
+def get_session_id_safe(legislative_period: str, session_no: str) -> str:
+    if len(session_no) == 1:
+        session_no_safe = f"00{session_no}"
+    elif len(session_no) == 2:
+        session_no_safe = f"0{session_no}"
+    else:
+        session_no_safe = session_no
+    return f"{legislative_period}{session_no_safe}"
+
+
+def get_crawled_session(session_id: str) -> dict:
+    # access to different mongoDB
+    print("INFO: getting session from external MongoDB (not yet implemented)")
+    # todo create dummy file reader
+    return {}
+
+
+

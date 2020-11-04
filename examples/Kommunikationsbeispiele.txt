@@ -10,7 +10,7 @@ verschiedene Fälle:
         "content": "Wenn ich beispielsweise höre, dass die schnelle Inkraftsetzung der Schuldenbremse ein Hauptziel der nachhaltigen Entwicklung ist, dann sage ich: Wir als Sozialdemokratinnen und Sozialdemokraten definieren als Erstes: Was soll dieser Staat leisten? Wir brauchen in dieser Phase Investitionen in Digitalisierung, in Bildung, in Infrastruktur. Und dann können wir gerne darüber reden, wie wir die Einnahmeseite gestalten, ob Schulden notwendig sind, ja oder nein. Aber als Erstes brauchen wir einen starken, handlungsfähigen Staat.",
         "speaker": {
             "first_name": "Matthias",
-            "fraction": "SPD",
+            "faction": "SPD",
             "full_role": "",
             "last_name": "Miersch",
             "role": ""
@@ -20,7 +20,7 @@ verschiedene Fälle:
         "content": "Vielen Dank. – Herr Präsident! Liebe Kolleginnen und Kollegen! Der Vorredner sprach davon, man müsse Worten Taten folgen lassen. In dieser Debatte ist viel von Nachhaltigkeit im Zusammenhang mit ökologischen Fragen des Klimaschutzes die Rede gewesen, und da ist jeder gefordert, seinen Beitrag zu leisten. Wir haben als Fraktion unseren bescheidenen Beitrag dazu geleistet, indem wir als erste Fraktion dieses Hauses klimaneutral sind.",
         "speaker": {
             "first_name": "Christian",
-            "fraction": "FDP",
+            "faction": "FDP",
             "full_role": "",
             "last_name": "Lindner",
             "role": ""
@@ -40,7 +40,7 @@ verschiedene Fälle:
         "content": "Jetzt darf ich Ihnen aber einen Hinweis geben – das trifft für meine Zeit als MP und auch heute zu –: Ich habe von Regierungen, an denen Grüne beteiligt sind, nullkommanull Unterstützung. Nullkommanull! Leider. Ich bedaure das sehr.",
         "speaker": {
             "first_name": "Horst",
-            "fraction": "",
+            "faction": "",
             "full_role": "Bundesminister des Innern, für Bau und Heimat",
             "last_name": "Seehofer",
             "role": "Bundesminister BMI"
@@ -51,7 +51,7 @@ verschiedene Fälle:
         "content": "Doch eins ist klar: Die Weißrussen wollen keine zweite Ukraine, sie wollen kein Chaos, sie wollen keine Einmischung von außen. Sie wollen selbst über ihr Schicksal entscheiden.",
         "speaker": {
             "first_name": "Anton",
-            "fraction": "AfD",
+            "faction": "AfD",
             "full_role": "",
             "last_name": "Friesen",
             "role": ""
@@ -62,7 +62,7 @@ verschiedene Fälle:
         "content": "Sündenfall Nummer eins: Klimaschutz und Energiewende. Sie vergeuden Abermilliarden Euro für die Illusion, Deutschland könnte durch die Schleifung seines industriellen Kerns das Klima beeinflussen. Das Ergebnis ist eine gigantische Verschwendung und Fehlallokation von Ressourcen und die Lähmung produktiver wirtschaftlicher Kräfte, die für die Herausforderungen der Zukunft fehlen. Sie verschandeln unsere Wälder und Landschaften mit Windrädern, die unzählige Greifvögel und Insekten töten,",
         "speaker": {
             "first_name": "Alice",
-            "fraction": "AfD",
+            "faction": "AfD",
             "full_role": "",
             "last_name": "Weidel",
             "role": ""
@@ -80,7 +80,7 @@ verschiedene Fälle:
         "content": "Umso verhängnisvoller ist es, dass dieses Anliegen von grünen und linken Ökomarxisten gekapert und in sein Gegenteil verkehrt wurde",
         "speaker": {
             "first_name": "Alice",
-            "fraction": "AfD",
+            "faction": "AfD",
             "full_role": "",
             "last_name": "Weidel",
             "role": ""
