@@ -1,0 +1,10 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    container_name: cme_mongodb
+    volumes:
+      - db-volume:/data/db
+volumes:
+  db-volume: {}

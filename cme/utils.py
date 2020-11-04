@@ -4,6 +4,7 @@ import asyncio
 
 from cme.data.json import read_json_transcript
 
+
 def reverse_dict(dict_obj: Dict) -> Dict:
     def _rebuild_dict(potential_dict: Tuple[Tuple]):
         if isinstance(potential_dict, tuple):

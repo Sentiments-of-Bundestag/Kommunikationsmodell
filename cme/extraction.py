@@ -3,9 +3,6 @@ import re
 from enum import Enum
 from typing import Dict, List
 
-from cme import utils, database
-from cme.data.json import read_json_transcript
-
 
 class PoliticalFactions(Enum):
     DIE_GRÜNEN = "BÜNDNIS 90/DIE GRÜNEN"
@@ -324,16 +321,3 @@ def extract_communication_model(all_interactions: List[Dict]):
     interactions, f_map, s_map = _fix_sender_and_receivers(interactions)
 
     return interactions, f_map, s_map
-
-
-def evaluate_newest_sessions(id_list: List[str]):
-    for id in id_list:
-        current_session = utils.get_crawled_session(id)
-        transcript = read_json_transcript(current_session)
-        interactions, f_map, s_map = extract_communication_model(transcript["interactions"])
-        transcript["interactions"] = interactions
-        transcript["factions"] = f_map
-        transcript["speakers"] = s_map
-
-        session_id = utils.get_session_id_safe(str(transcript['legislative_period']), str(transcript['session_no']))
-        utils.run_async(database.update_one("session", {"session_id": session_id}, transcript))
