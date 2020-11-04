@@ -1,5 +1,9 @@
+examples/plenarprotokolle
+
+
 # ide stuff
 .idea/
+*.iml
 
 # python specific stuff
 __pycache__/
@@ -23,3 +27,7 @@ var/
 
 # local test data dir
 data/
+
+
+# mac stuff
+.DS_Store
