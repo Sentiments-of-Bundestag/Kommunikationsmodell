@@ -26,7 +26,7 @@ var/
 *.egg
 
 # local test data dir
-data/
+/data/
 
 
 # mac stuff
