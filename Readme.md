@@ -17,14 +17,21 @@ install it system wide it makes sense to build a python [venv](https://docs.pyth
 can safely install the package and needed other packages.
 
 If you want to change the code it should also be noted that the package can be installed in the so called development 
-mode. Doing so makes it possible to change code without having to reinstall it after this to run it. To install it in 
-dev mode just run `pip install -e .`.
+mode. Doing so makes it possible to run changed code without having to reinstall the package to do so. To install it in 
+dev mode just run `pip install -e .` in the root dir of the repository.
 
 ## Usage
 
-After the installation `cme` should be available in your path and can than either be used in manual or server mode.
+After the installation `cme` should be an available executable and can than either be used in manual or server mode.
 
-todo: extend this
+Manual mode allows you to convert input data from a file instead of waiting for a request to our REST API. The mode can 
+be triggered by running: `cme manual` or `cme m`
+
+In contrast to that the server mode will start up our REST API endpoints and will wait for requests from group 1 or 3 
+to do anything. To run `cme` in server mode just run: `cme server` or `cme s`
+
+Besides the two modes there are several flags which can be used to configure the behaviour of `cme`. To explore those 
+just run `cme --help` or `cme -h`.
 
 ## API
 
