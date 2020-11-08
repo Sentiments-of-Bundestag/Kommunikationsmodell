@@ -1,9 +1,14 @@
-examples/plenarprotokolle
+
+
+# Project
+resources/plenarprotokolle/*
+!resources/plenarprotokolle/19180-data.xml
 
 
 # ide stuff
 .idea/
 *.iml
+.vscode
 
 # python specific stuff
 __pycache__/
@@ -24,6 +29,8 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+Scripts/
+pyvenv.cfg
 
 # local test data dir
 /data/
