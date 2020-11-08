@@ -1,9 +1,8 @@
-
-
 # Project
-resources/plenarprotokolle/*
-!resources/plenarprotokolle/19180-data.xml
-
+resources/plenarprotokolle/group_1/*
+!resources/plenarprotokolle/group_1/19_181_187.json
+resources/plenarprotokolle/open_data/*
+!resources/plenarprotokolle/open_data/19180-data.xml
 
 # ide stuff
 .idea/
@@ -31,10 +30,6 @@ var/
 *.egg
 Scripts/
 pyvenv.cfg
-
-# local test data dir
-/data/
-
 
 # mac stuff
 .DS_Store
