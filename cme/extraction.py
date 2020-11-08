@@ -1,39 +1,12 @@
 import logging
 import re
-from enum import Enum
-from typing import Dict, List
+from datetime import datetime
+from typing import Dict, List, Tuple
+
+from cme.domain import InteractionCandidate, Interaction, MDB, Faction
 
 
-class PoliticalFactions(Enum):
-    DIE_GRÜNEN = "BÜNDNIS 90/DIE GRÜNEN"
-    FDP = "FDP"
-    DIE_LINKE = "DIE LINKE"
-    AFD = "AfD"
-    CDU_AND_CSU = "CDU/CSU"
-    SPD = "SPD"
-
-    @classmethod
-    def text_contains(cls, text):
-        pos_text_reps = {
-            PoliticalFactions.DIE_GRÜNEN: ["BÜNDNIS 90/DIE GRÜNEN", "BÜNDNIS 90", "DIE GRÜNEN"],
-            PoliticalFactions.FDP: ["FDP"],
-            PoliticalFactions.DIE_LINKE: ["DIE LINKE", "LINKE"],
-            PoliticalFactions.AFD: ["AfD"],
-            PoliticalFactions.CDU_AND_CSU: ["CDU/CSU"],
-            PoliticalFactions.SPD: ["SPD"]
-        }
-
-        found = list()
-        for faction, reps in pos_text_reps.items():
-            for r in reps:
-                if r in text:
-                    found.append(faction)
-                    break
-
-        return found
-
-
-def build_person_dict(person_str):
+def _build_mdb(person_str):
     # the following lines are a workaround for the somehow not working
     # optional matching group for the Abg. string. If someone finds a way to
     # get this optional matching group working feel free to remove also
@@ -65,26 +38,30 @@ def build_person_dict(person_str):
 
     faction = ""
     for mp in metadata_parts:
-        found_factions = PoliticalFactions.text_contains(mp)
+        found_factions = Faction.in_text(mp)
         if found_factions:
             assert len(found_factions) == 1
-            faction = found_factions[0].value
+            faction = found_factions[0]
             break
 
-    return {
-        "first_name": " ".join(name_parts[:-1]),
-        "last_name": name_parts[-1],
-        "faction": faction,
-        "full_role": "",
-        "role": ""
-    }
+    membership = list()
+    if faction:
+        membership = [(datetime.min, None, faction)]
+
+    return MDB.give_me_a_better_name(
+        forename=" ".join(name_parts[:-1]),
+        surname=name_parts[-1],
+        memberships=membership)
 
 
-def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False):
+def _extract_comment_interactions(
+        candidates: List[InteractionCandidate],
+        add_debug_obj: bool = False) -> List[Interaction]:
+
     human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.+])")
     reformatted_interactions = list()
 
-    def _extract(text_part):
+    def _extract(text_part: str):
         # todo: this can probably be simplified/ improved by extracting some
         #  generics functions from the following code.
 
@@ -99,7 +76,7 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                 ps, pr = [s.strip() for s in ps.split(",", 1)]
 
                 pr_match = human_sender_re.search(pr)
-                pfr = PoliticalFactions.text_contains(pr)
+                pfr = Faction.in_text(pr)
                 if pr_match:
                     pr = [pr_match.group("person")]
                 elif pfr:
@@ -118,28 +95,28 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                 if pr:
                     for curr_pr in pr:
                         if isinstance(curr_pr, str):
-                            curr_pr = build_person_dict(curr_pr)
-                        elif isinstance(curr_pr, PoliticalFactions):
-                            curr_pr = curr_pr.value
+                            curr_pr = _build_mdb(curr_pr)
+                        elif isinstance(curr_pr, Faction):
+                            curr_pr = curr_pr
 
                         return [(
-                            build_person_dict(phs[0]),
+                            _build_mdb(phs[0]),
                             curr_pr,
                             pm)]
                 else:
                     return [(
-                        build_person_dict(phs[0]),
+                        _build_mdb(phs[0]),
                         None,
                         pm)]
             else:
-                pfs = PoliticalFactions.text_contains(ps)
+                pfs = Faction.in_text(ps)
 
                 if len(pfs) == 0:
                     logging.warning(
                         "Found no direct sender in \"{}\"! Ignoring the "
                         "message...".format(text_part))
 
-                return [(f.value, None, pm) for f in pfs]
+                return [(f, None, pm) for f in pfs]
         # converting non verbal messages like laughing
         else:
             keywords = {
@@ -178,18 +155,18 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
                             "This is currently not supported".format(phs, text_part))
 
                     found_senders.append((
-                        build_person_dict(phs[0]),
+                        _build_mdb(phs[0]),
                         None,
                         text_part))
                 else:
-                    pfs = PoliticalFactions.text_contains(ps)
+                    pfs = Faction.in_text(ps)
 
                     if len(pfs) == 0:
                         logging.warning(
                             "Found no direct sender in \"{}\"! Ignoring the "
                             "message...".format(text_part))
 
-                    found_senders += [(f.value, None, text_part) for f in pfs]
+                    found_senders += [(f, None, text_part) for f in pfs]
 
             return found_senders
 
@@ -209,8 +186,8 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
             splitted = [p.strip() for p in full_text.split(split_char)]
         return splitted
 
-    for curr_inter in raw_interactions:
-        full_text = curr_inter["comment"].strip("()")
+    for curr_cand in candidates:
+        full_text = curr_cand.comment.strip("()")
         text_parts = _split_comments(full_text)
 
         for part in text_parts:
@@ -218,23 +195,25 @@ def _extract_comment_interactions(raw_interactions, add_debug_obj: bool = False)
             if result:
                 for sender, receiver, message in result:
                     if not receiver:
-                        receiver = curr_inter["speaker"]
+                        receiver = curr_cand.speaker
 
                     if not receiver:
                         logging.warning("Couldn't find a receiver for \"{}\"".format(part))
                         continue
 
-                    reformatted_interactions.append({
+                    inter = {
                         "sender": sender,
                         "receiver": receiver,
-                        "message": message})
+                        "message": message}
 
                     if add_debug_obj:
-                        reformatted_interactions[-1]["debug"] = {
-                            "orig_speaker": curr_inter["speaker"],
-                            "orig_paragraph": curr_inter["paragraph"],
+                        inter["debug"] = {
+                            "orig_speaker": curr_cand.speaker,
+                            "orig_paragraph": curr_cand.paragraph,
                             "full_comment_text": full_text,
                             "part": part}
+
+                    reformatted_interactions.append(Interaction(**inter))
             else:
                 logging.warning("Couldn't extract a message from \"{}\". "
                                 "dropping it now...".format(part))
@@ -272,7 +251,7 @@ def _fix_sender_and_receivers(interactions):
                 # are random spaces after this in the source files
                 if obj.startswith("Vizepräsiden") or obj.startswith("Präsident"):
                     found_id = _fix_either(
-                        build_person_dict(obj[obj.find(" "):].rstrip(":")))
+                        _build_mdb(obj[obj.find(" "):].rstrip(":")))
                 else:
                     found_id = "F{}".format(next_f_id)
                     next_f_id += 1
@@ -313,11 +292,15 @@ def _fix_sender_and_receivers(interactions):
     return fixed_interactions, faction_map, speaker_map
 
 
-def extract_communication_model(all_interactions: List[Dict]):
+def extract_communication_model(
+        candidates: List[InteractionCandidate],
+        add_debug_objects: bool = False) \
+        -> List[Interaction]:
+
     interactions = _extract_comment_interactions(
-        list(filter(lambda i: i["comment"] is not None, all_interactions)))
+        list(filter(lambda i: i.comment is not None, candidates)),
+        add_debug_obj=add_debug_objects)
 
     # todo: handle inner paragraph comments
-    interactions, f_map, s_map = _fix_sender_and_receivers(interactions)
 
-    return interactions, f_map, s_map
+    return interactions

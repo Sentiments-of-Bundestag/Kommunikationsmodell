@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import Dict, Tuple, List
 import asyncio
 
-from cme.data.json import read_json_transcript
-
 
 def reverse_dict(dict_obj: Dict) -> Dict:
     def _rebuild_dict(potential_dict: Tuple[Tuple]):
@@ -14,7 +12,10 @@ def reverse_dict(dict_obj: Dict) -> Dict:
     return {v: _rebuild_dict(k) for k, v in dict_obj.items()}
 
 
-def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DMY"):
+def build_datetime(date_str: str, time_str: str = None, date_order: str = "DMY") -> datetime:
+    if not date_str:
+        return None
+
     datetime_args = list()
 
     date_parts = date_str.split(".")
@@ -24,16 +25,21 @@ def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DM
     datetime_args.append(int(date_parts[date_order.upper().find("M")]))
     datetime_args.append(int(date_parts[date_order.upper().find("D")]))
 
-    # apparently they allow free format time fields... I mean there are time
-    # data types in xml but sure, let's role with free format time fields.
-    # Otherwise reading this file with a computer would be to easy I guess...
-    time_sep = ":" if ":" in time_str else "."
-    time_parts = [
-        t if not " " in t else t[:t.find(" ")]
-        for t in time_str.split(time_sep)]
-    datetime_args += [int(t) for t in time_parts]
+    if time_str:
+        # apparently they allow free format time fields... I mean there are time
+        # data types in xml but sure, let's role with free format time fields.
+        # Otherwise reading this file with a computer would be to easy I guess...
+        time_sep = ":" if ":" in time_str else "."
+        time_parts = [
+            t if not " " in t else t[:t.find(" ")]
+            for t in time_str.split(time_sep)]
+        datetime_args += [int(t) for t in time_parts]
 
-    return datetime(*datetime_args).isoformat()
+    return datetime(*datetime_args)
+
+
+def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DMY") -> str:
+    return build_datetime(date_str, time_str, date_order).isoformat()
 
 
 def cleanup_str(str_to_fix):
