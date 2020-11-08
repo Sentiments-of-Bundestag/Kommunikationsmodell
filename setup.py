@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 import unittest
 
 
@@ -26,8 +26,7 @@ if __name__ == "__main__":
         description="Communication Model Extractor (cme) is a small tool to "
                     "extract conversations from the open data xml files from "
                     "Bundestag.",
-        packages=find_packages(where="cme", include=["cme", "cme.*"]),
-            #exclude=["test", "data"]),
+        packages=find_packages(),
         entry_points={
             "console_scripts": [
                 "cme = cme.cli:main",

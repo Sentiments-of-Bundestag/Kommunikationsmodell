@@ -1,0 +1,7 @@
+# ignore everything
+**
+
+# only add needed things for the installation
+!/cme/**
+!/setup.py
+!/requirements.txt

@@ -4,6 +4,9 @@ resources/plenarprotokolle/group_1/*
 resources/plenarprotokolle/open_data/*
 !resources/plenarprotokolle/open_data/19180-data.xml
 
+# project artifacts
+/cme_latest.tar
+
 # ide stuff
 .idea/
 *.iml

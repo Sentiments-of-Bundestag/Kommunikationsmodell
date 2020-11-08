@@ -62,7 +62,7 @@ class Faction(Enum):
         corresponding name. If the name is not a unique name representative
         in_text should be used to get all possible matches."""
 
-        if name is "":
+        if name == "":
             return cls.NONE
 
         for var in cls:
