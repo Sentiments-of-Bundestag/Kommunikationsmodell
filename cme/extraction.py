@@ -48,7 +48,7 @@ def _build_mdb(person_str):
     if faction:
         membership = [(datetime.min, None, faction)]
 
-    return MDB.give_me_a_better_name(
+    return MDB.find_in_storage(
         forename=" ".join(name_parts[:-1]),
         surname=name_parts[-1],
         memberships=membership)

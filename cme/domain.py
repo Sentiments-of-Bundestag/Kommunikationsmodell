@@ -32,7 +32,7 @@ class Faction(Enum):
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
             "Sozialdemokrat", "Rot"])
     DIE_LINKE = (["DIE LINKE", "Die Linke", "Linke" "Linkspartei", "Rot"])
-    DIE_GRÜNEN = (["BÜNDNIS 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
+    DIE_GRÜNEN = (["BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
                    "Die Grünen", "Bündnis 90", "Grün"])
     AFD = (["AfD", "Alternative für Duetschland", "Blau"])
     FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
@@ -136,7 +136,7 @@ class MDB(BaseModel):
         return self.speaker_id
 
     @classmethod
-    def give_me_a_better_name(
+    def find_in_storage(
             cls,
             forename: str,
             surname: str,

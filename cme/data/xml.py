@@ -70,7 +70,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     new_para_str = cleanup_str(el.getText())
                     if curr_paragraph is not None:
                         speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                            else MDB.give_me_a_better_name(**curr_speaker)
+                            else MDB.find_in_storage(**curr_speaker)
 
                         pms.append(InteractionCandidate(
                             speaker=speaker,
@@ -82,7 +82,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                                   "p.".format(category))
             elif el.name == "kommentar":
                 speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                    else MDB.give_me_a_better_name(**curr_speaker)
+                    else MDB.find_in_storage(**curr_speaker)
 
                 pms.append(InteractionCandidate(
                     speaker=speaker,
@@ -93,7 +93,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
         # finish still open curr_paragraph
         if curr_paragraph is not None:
             speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                else MDB.give_me_a_better_name(**curr_speaker)
+                else MDB.find_in_storage(**curr_speaker)
 
             pms.append(InteractionCandidate(
                 speaker=speaker,
