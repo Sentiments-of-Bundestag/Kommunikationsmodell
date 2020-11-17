@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks
 from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from typing import List
+import logging
 
 from cme import database
 from cme.api import error
@@ -14,6 +15,7 @@ db = database.get_db()
 @router.post("/", status_code=HTTP_200_OK, tags=[])
 async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks):
     # create subprocess: background task to get new protocols and iterate over (start parser/cme)
+    logging.info(f"Received update request for sessions '{ids}'")
     background_tasks.add_task(json.evaluate_newest_sessions, ids)
 
     return {"Message: ": f"Background task has been created to evaluate newest sessions with ids: '{ids}'"}
@@ -22,7 +24,7 @@ async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks):
 @router.get("/session/{session_id}", status_code=HTTP_200_OK, tags=['data'])
 async def get_session(session_id: str):
     # id = legislative period + session eg: 19177
-    session = await database.find_one("session", {'session_id': session_id})
+    session = database.find_one("session", {'session_id': session_id})
 
     if not session:
         error.raise_404(f"No session with id '{session_id}' was found.")
@@ -34,7 +36,7 @@ async def get_session(session_id: str):
 async def get_all_sessions_in_legislative_period(legislative_period: int):
     # todo: add pagination
     # id = legislative period: 19
-    sessions = await database.find_many("session", {'legislative_period': legislative_period})
+    sessions = database.find_many("session", {'legislative_period': legislative_period})
     if not sessions:
         error.raise_404(f"No sessions found for legislative period '{legislative_period}'.")
 

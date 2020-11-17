@@ -44,10 +44,7 @@ def evaluate_newest_sessions(id_list: List[str]):
                 transcript['session_id'] = session_id
 
                 # maybe there is a smarter way to call async method in here? 'utils.run_async' does not work...
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                future = asyncio.ensure_future(database.update_one("session", {"session_id": session_id}, transcript))
-                loop.run_until_complete(future)
+                database.update_one("session", {"session_id": session_id}, transcript)
 
 
         #cm = CommunicationModel(transcripts=transcripts)

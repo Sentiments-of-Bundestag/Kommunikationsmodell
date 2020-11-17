@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from datetime import datetime
 from typing import Dict, Tuple
 
@@ -115,6 +116,7 @@ def get_crawled_session(session_id: str) -> dict:
 
     if not crawled_db:
         logging.warning("External DB access was not successful. Using test data...")
+        time.sleep(4)
         with open("./resources/plenarprotokolle/group_1/19_181_187.json", "r") as read_file:
             session = json.load(read_file)
         return session

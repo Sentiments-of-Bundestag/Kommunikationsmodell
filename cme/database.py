@@ -2,7 +2,9 @@ import logging
 import os
 from datetime import datetime
 
+from pymongo import MongoClient
 import motor.motor_asyncio
+from pymongo.errors import ServerSelectionTimeoutError
 
 db = None
 DB_USER = None
@@ -24,7 +26,7 @@ def get_db():
     else:
         db_url = f"mongodb://{DB_HOST_PORT}/{DB_DB}"
 
-    client = motor.motor_asyncio.AsyncIOMotorClient(db_url, tz_aware=True)
+    client = MongoClient(db_url, tz_aware=True)
     db = client[DB_DB]
     return db
 
@@ -46,33 +48,42 @@ def get_crawler_db():
         return None
 
     db_url = f"mongodb://{user}:{pw}@{crawl_ip}/?authSource={db_name}"
+    try:
+        client = MongoClient(db_url, tz_aware=True, serverSelectionTimeoutMS=10000)
+        crawl_db = client[db_name]
 
-    client = motor.motor_asyncio.AsyncIOMotorClient(db_url, tz_aware=True)
-    crawl_db = client[db_name]
-    return crawl_db
+        # test connection
+        collections = crawl_db.list_collection_names()
+        print(collections)
+
+        logging.info(f"Connection to external DB was successful.")
+        return crawl_db
+    except ServerSelectionTimeoutError as err:
+        logging.error(f"Timeout while connecting to external DB, error: {err}")
+    return None
 
 
-async def find_one(collection_name: str, query: dict) -> dict:
-    return await db[collection_name].find_one(query)
+def find_one(collection_name: str, query: dict) -> dict:
+    return db[collection_name].find_one(query)
 
 
-async def find_many(collection_name: str, query: dict) -> list:
+def find_many(collection_name: str, query: dict) -> list:
     cursor = db[collection_name].find(query)
-    return await cursor.to_list(None)
+    return cursor.to_list(None)
 
 
-async def insert_many(collection_name: str, query: list) -> None:
+def insert_many(collection_name: str, query: list) -> None:
     collection = db[collection_name]
-    await collection.insert_many(query)
+    collection.insert_many(query)
 
 
-async def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
+def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
     if on_insert is None:
         on_insert = {}
     now = datetime.utcnow().isoformat()
     update['modified'] = now
     on_insert['created'] = now
-    result = await db[collection_name].update_one(query, {'$set': update, '$setOnInsert': on_insert}, upsert=True)
+    result = db[collection_name].update_one(query, {'$set': update, '$setOnInsert': on_insert}, upsert=True)
     if result.modified_count == 1:
         return True
     return False
