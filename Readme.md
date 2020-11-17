@@ -1,10 +1,14 @@
-# Sentiments-of-Bundestag: Communication Model
+# Sentiments-of-Bundestag: Communication Model Extraction (CME)
 
 **Group 2**: Kommunikationsmodell
 
 We try to build a communication model out of the parsed XML data from Group 1.
 
 This is pretty much work in progress. You can have a look into the examples folder to see what we are trying to archive.
+
+The desired workflow with teams working before and after the communication model is shown here:
+
+![Ablaufdiagramm](./resources/Ablaufdiagramm.jpg)
 
 ## Installation
 
@@ -45,6 +49,14 @@ Different endpoints:
 - install and start as a daemon, accessible through port 27017 
     mac: brew
     linux: systemctl
+    
+
+This project retrieves the protocols from another group via direct DB access. For that you will have to set the following environment variables:
+```
+export CRAWL_DB_USER=""
+export CRAWL_DB_PASSWORD=""
+export CRAWL_DB_IP=""
+``` 
 
 ## Supporter
 
