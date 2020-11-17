@@ -1,6 +1,10 @@
-from datetime import datetime
-from typing import Dict, Tuple, List
 import asyncio
+import json
+import logging
+from datetime import datetime
+from typing import Dict, Tuple
+
+from cme import database
 
 
 def reverse_dict(dict_obj: Dict) -> Dict:
@@ -104,10 +108,22 @@ def get_session_id_safe(legislative_period: str, session_no: str) -> str:
 
 
 def get_crawled_session(session_id: str) -> dict:
-    # access to different mongoDB
-    print("INFO: getting session from external MongoDB (not yet implemented)")
-    # todo create dummy file reader
+    # todo: testing is needed to access DB from group 1, probably need to specify query better to receive single session
+    # db & collection name is still unknown
+
+    crawled_db = database.get_crawler_db()
+
+    if not crawled_db:
+        logging.warning("External DB access was not successful. Using test data...")
+        with open("./resources/plenarprotokolle/group_1/19_181_187.json", "r") as read_file:
+            session = json.load(read_file)
+        return session
+
+    collection_name = "session"
+    query = {'_id': session_id}
+    session = run_async(crawled_db[collection_name].find_one(query))
+
+    if session:
+        logging.info(f"Successful retrieved session '{session_id}' from external DB")
+        return session
     return {}
-
-
-

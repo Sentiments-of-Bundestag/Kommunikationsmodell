@@ -1,8 +1,6 @@
-from datetime import datetime, timezone
-import asyncio
-from typing import List
-import uuid
-from collections import namedtuple
+import logging
+import os
+from datetime import datetime
 
 import motor.motor_asyncio
 
@@ -10,7 +8,9 @@ db = None
 DB_USER = None
 DB_PASSWORD = None
 DB_HOST_PORT = "localhost:27017"
-DB_DB = "cm_data"
+DB_DB = "cme_data"
+
+crawl_db = None
 
 
 def get_db():
@@ -27,6 +27,29 @@ def get_db():
     client = motor.motor_asyncio.AsyncIOMotorClient(db_url, tz_aware=True)
     db = client[DB_DB]
     return db
+
+
+def get_crawler_db():
+    global crawl_db
+    if crawl_db:
+        return crawl_db
+
+    # check for env vars
+    user = os.environ.get("CRAWL_DB_USER")
+    pw = os.environ.get("CRAWL_DB_PASSWORD")
+    crawl_ip = os.environ.get("CRAWL_DB_IP")
+    db_name = "test"
+
+    if not user or not pw or not crawl_ip:
+        logging.error(
+            "Please provide CRAWL_DB_USER, CRAWL_DB_PASSWORD and CRAWL_DB_IP as env var's to access crawler DB.")
+        return None
+
+    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/?authSource={db_name}"
+
+    client = motor.motor_asyncio.AsyncIOMotorClient(db_url, tz_aware=True)
+    crawl_db = client[db_name]
+    return crawl_db
 
 
 async def find_one(collection_name: str, query: dict) -> dict:

@@ -1,27 +1,56 @@
 import json
 from datetime import datetime
 from pathlib import Path
+import logging
 from typing import List, Dict, Tuple
+import asyncio
 
 from cme import utils, database
 from cme.extraction import extract_communication_model
-from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction
+from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction,  Transcript, CommunicationModel
 from cme.utils import build_datetime
 
 
 def evaluate_newest_sessions(id_list: List[str]):
     # todo: should this not be moved into extraction.py? as this is only to
     #  read the raw data and not to interpret it?
+    # wasn't this the spot (extraction.py) were I first put it? :D (oskar)
     for id in id_list:
+        transcripts = []
         current_session = utils.get_crawled_session(id)
-        transcript = read_transcripts_json_file(current_session)
-        interactions, f_map, s_map = extract_communication_model(transcript["interactions"])
-        transcript["interactions"] = interactions
-        transcript["factions"] = f_map
-        transcript["speakers"] = s_map
+        file_content = read_transcripts_json(current_session)
 
-        session_id = utils.get_session_id_safe(str(transcript['legislative_period']), str(transcript['session_no']))
-        utils.run_async(database.update_one("session", {"session_id": session_id}, transcript))
+        # todo: when real DB access happens, we should probably only retrieve one session per request?
+        # then every transcript should be one session and should be stored in DB, (for loop should not be necessary anymore)
+        i = 1
+        for metadata, inter_candidates in file_content:
+            transcript = Transcript.from_interactions(
+                metadata=metadata,
+                interactions=extract_communication_model(inter_candidates))
+
+            i += 1
+            transcripts.append(transcript)
+
+            # write to DB
+            if len(transcript.interactions) > 0:
+                session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
+                logging.info(f"Inserting evaluated session '{session_id}' into DB")
+
+                # save to file
+                with open(f"transcript_{i}.json", "w", encoding="utf-8") as o:
+                    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
+
+                transcript = transcript.dict()
+                transcript['session_id'] = session_id
+
+                # maybe there is a smarter way to call async method in here? 'utils.run_async' does not work...
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                future = asyncio.ensure_future(database.update_one("session", {"session_id": session_id}, transcript))
+                loop.run_until_complete(future)
+
+
+        #cm = CommunicationModel(transcripts=transcripts)
 
 
 def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> List[InteractionCandidate]:
