@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 import uvicorn
+import json
 
 from cme import database, utils
 from cme.data import read_transcript_xml_file, read_transcripts_json_file
@@ -28,21 +29,18 @@ def manual_mode(args):
 
         logging.info("extracting communication model now...".format(file.as_posix()))
         for metadata, inter_candidates in file_content:
-            transcripts.append(Transcript.from_interactions(
-                metadata=metadata,
-                interactions=extract_communication_model(inter_candidates)))
+            transcript = Transcript.from_interactions(metadata=metadata, interactions=extract_communication_model(inter_candidates))
+
+            # insert into DB
+            session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
+            database.update_one("session", {"session_id": session_id}, json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False)))
+
+            transcripts.append(transcript)
 
         cm = CommunicationModel(transcripts=transcripts)
 
         # TODO(ralph): I think I need to fix the following db calls after my
         #  refactoring.
-
-        ## TODO: only insert interactions, skip factions & speakers
-        #session_id = utils.get_session_id_safe(
-        #    str(metadata.legislative_period),
-        #    str(metadata.session_no))
-        #utils.run_async(database.update_one(
-        #    "session", {"session_id": session_id}, tran))
 
         with open(file.with_suffix(".converted.json"), "w", encoding="utf-8") as o:
             o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))

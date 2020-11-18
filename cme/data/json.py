@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from typing import List, Dict, Tuple
-import asyncio
 
 from cme import utils, database
 from cme.extraction import extract_communication_model
@@ -22,13 +21,11 @@ def evaluate_newest_sessions(id_list: List[str]):
 
         # todo: when real DB access happens, we should probably only retrieve one session per request?
         # then every transcript should be one session and should be stored in DB, (for loop should not be necessary anymore)
-        i = 1
         for metadata, inter_candidates in file_content:
             transcript = Transcript.from_interactions(
                 metadata=metadata,
                 interactions=extract_communication_model(inter_candidates))
 
-            i += 1
             transcripts.append(transcript)
 
             # write to DB
@@ -36,15 +33,14 @@ def evaluate_newest_sessions(id_list: List[str]):
                 session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
                 logging.info(f"Inserting evaluated session '{session_id}' into DB")
 
+                # todo: change janky conversion
+                transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
+                transcript_dict['session_id'] = session_id
+                database.update_one("session", {"session_id": session_id}, transcript_dict)
+
                 # save to file
-                with open(f"transcript_{i}.json", "w", encoding="utf-8") as o:
-                    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
-
-                transcript = transcript.dict()
-                transcript['session_id'] = session_id
-
-                # maybe there is a smarter way to call async method in here? 'utils.run_async' does not work...
-                database.update_one("session", {"session_id": session_id}, transcript)
+                #with open(f"transcript_{session_id}.json", "w", encoding="utf-8") as o:
+                #    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
 
 
         #cm = CommunicationModel(transcripts=transcripts)
