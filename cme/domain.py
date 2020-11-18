@@ -246,6 +246,9 @@ class Transcript(BaseModel):
                 if inter.receiver.value not in faction_map:
                     faction_map[inter.receiver.value] = inter.receiver
 
+        for mdb_id, mdb in mdb_map.items():
+            mdb.memberships = [(m[0], m[1], m[2].value) for m in mdb.memberships]
+
         return cls(
             session_no=metadata.session_no,
             legislative_period=metadata.legislative_period,

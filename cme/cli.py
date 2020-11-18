@@ -36,8 +36,6 @@ def manual_mode(args):
         for metadata, inter_candidates in file_content:
             transcript = Transcript.from_interactions(metadata=metadata, interactions=extract_communication_model(inter_candidates))
 
-            a = transcript.dict()
-
             # insert into DB
             if not args.dry_run:
                 logger.info("writing transcript into db.")
@@ -47,11 +45,7 @@ def manual_mode(args):
                     {
                         "session_id": session_id
                     },
-                    json.loads(
-                        transcript.json(
-                            exclude_none=True,
-                            indent=4,
-                            ensure_ascii=False)))
+                    transcript.dict())
 
             transcripts.append(transcript)
 
