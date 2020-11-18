@@ -17,9 +17,62 @@ def _build_candidate(comment: str) -> InteractionCandidate:
 
 class TestExtraction(unittest.TestCase):
 
-    def test_example_setup(self):
-        comment = "(Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, " \
-                  "der SPD und des BÜNDNISSES 90/DIE GRÜNEN – Dr. Eberhardt " \
-                  "Alexander Gauland [AfD]: Ha, ha, ha!)"
+    def test_extract_sample1(self):
+        comment = "(Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und des BÜNDNISSES 90/DIE GRÜNEN – Dr. Eberhardt Alexander Gauland [AfD]: Ha, ha, ha!)"
 
         cm = extract_communication_model([_build_candidate(comment)])
+        interaction_0 = cm[0]
+        interaction_1 = cm[1]
+        interaction_2 = cm[2]
+        interaction_3 = cm[3]
+        interaction_4 = cm[4]
+        self.assertEqual(interaction_0.sender, Faction.FDP)
+        self.assertEqual(interaction_0.message, 'Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und '
+                                                'des BÜNDNISSES 90/DIE GRÜNEN')
+        self.assertEqual(interaction_1.sender, Faction.CDU_AND_CSU)
+        self.assertEqual(interaction_1.message, 'Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und '
+                                                'des BÜNDNISSES 90/DIE GRÜNEN')
+        self.assertEqual(interaction_2.sender, Faction.SPD)
+        self.assertEqual(interaction_2.message, 'Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und '
+                                                'des BÜNDNISSES 90/DIE GRÜNEN')
+        self.assertEqual(interaction_3.sender, Faction.DIE_GRÜNEN)
+        self.assertEqual(interaction_3.message, 'Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und '
+                                                'des BÜNDNISSES 90/DIE GRÜNEN')
+        self.assertEqual(interaction_4.sender, MDB.find_in_storage(forename="Eberhardt Alexander", surname="Gauland", memberships=[(datetime.min, None, Faction.AFD)]))
+        self.assertEqual(interaction_4.message, 'Ha, ha, ha!')
+
+    def test_extract_sample2(self):
+        comment = "(Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN – Zuruf des Abg. Armin-Paulus Hampel [AfD])"
+
+        cm = extract_communication_model([_build_candidate(comment)])
+        interaction_0 = cm[0]
+        interaction_1 = cm[1]
+        interaction_2 = cm[2]
+        interaction_3 = cm[3]
+        interaction_4 = cm[4]
+        interaction_5 = cm[5]
+        self.assertEqual(interaction_0.sender, Faction.CDU_AND_CSU)
+        self.assertEqual(interaction_0.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
+        self.assertEqual(interaction_1.sender, Faction.SPD)
+        self.assertEqual(interaction_1.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
+        self.assertEqual(interaction_2.sender, Faction.FDP)
+        self.assertEqual(interaction_2.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
+        self.assertEqual(interaction_3.sender, Faction.DIE_LINKE)
+        self.assertEqual(interaction_3.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
+        self.assertEqual(interaction_4.sender, Faction.DIE_GRÜNEN)
+        self.assertEqual(interaction_4.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
+        self.assertEqual(interaction_5.sender, MDB.find_in_storage(forename="Armin-Paulus", surname="Hampel", memberships=[(datetime.min, None, Faction.AFD)]))
+        self.assertEqual(interaction_5.message, 'Zuruf des Abg. Armin-Paulus Hampel [AfD]')
+
+    def test_extract_sample3(self):
+        comment3 = "(Carsten Schneider [Erfurt] [SPD]: Was für ein Blödsinn! – Zuruf vom BÜNDNIS90/DIE GRÜNEN: Vielleicht mal lesen! Lesen bildet!)"
+
+        cm3 = extract_communication_model([_build_candidate(comment3)])
+        interaction_0 = cm3[0]
+        interaction_1 = cm3[1]
+
+        self.assertEqual(interaction_0.sender, MDB.find_in_storage(forename="Carsten", surname="Schneider", memberships=[(datetime.min, None, Faction.SPD)]))
+        self.assertEqual(interaction_0.message, 'Was für ein Blödsinn!')
+        self.assertEqual(interaction_1.sender, Faction.DIE_GRÜNEN)
+        self.assertEqual(interaction_1.message, 'Zuruf vom BÜNDNIS90/DIE GRÜNEN: Vielleicht mal lesen! Lesen bildet!')
+
