@@ -9,6 +9,9 @@ from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
 from cme.utils import cleanup_str, split_name_str, build_datetime
 
 
+logger = logging.getLogger("cme.data")
+
+
 def _safe_get_text(element: bs4e.Tag, child_tag: str, default=""):
     searched_child = element.find(child_tag)
     if searched_child: return cleanup_str(searched_child.getText())
@@ -46,7 +49,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
             # makes accessible but we don't need
             if isinstance(el, bs4e.NavigableString):
                 continue
-            elif el.name == "name":
+            elif el.name == "name" or (el.name == "p" and el.get("klasse") == "N"):
                 # todo: convert this to a dict
                 role, title, first_name, last_name = split_name_str(
                     cleanup_str(el.getText().rstrip(":")))
@@ -61,14 +64,28 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                 category = el.get("klasse")
 
                 if category == "redner":
+                    # workaround for the situation in which the fraktion tags in
+                    # the xml somehow contain a direct speech formatted like this "SPD: ja."
+                    faction_txt = _safe_get_text(el.redner, "fraktion")
+                    if ":" in faction_txt:
+                        faction_txt = faction_txt.split(":")[0].strip()
+
                     curr_speaker = {
                         "forename": _safe_get_text(el.redner, "vorname"),
                         "surname": _safe_get_text(el.redner, "nachname"),
-                        "memberships": [(datetime.min, None, Faction.from_name(_safe_get_text(el.redner, "fraktion")))],
+                        "memberships": [(datetime.min, None, Faction.from_name(faction_txt))],
                         "title": _safe_get_text(el.redner, "rolle_lang")}
-                elif category in ["J", "J_1", "O"]:
+                elif category in ["J", "J_1", "O", "Z"]:
                     new_para_str = cleanup_str(el.getText())
                     if curr_paragraph is not None:
+                        if not curr_speaker:
+                            logger.warning(
+                                "found a new paragraph but couldn't finish "
+                                "the old one as there has been no speaker so "
+                                "far! dropping the old one (\"{}\") now...".format(curr_paragraph))
+                            curr_paragraph = new_para_str
+                            continue
+
                         speaker = curr_speaker if isinstance(curr_speaker, MDB) \
                             else MDB.find_in_storage(**curr_speaker)
 
@@ -78,9 +95,23 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                             comment=None))
                     curr_paragraph = new_para_str
                 else:
-                    logging.debug("Ignoring unhandled category \"{}\" of tag "
+                    logger.debug("Ignoring unhandled category \"{}\" of tag "
                                   "p.".format(category))
             elif el.name == "kommentar":
+                if not curr_speaker:
+                    logger.warning(
+                        "found a comment but there has been no speaker so far"
+                        "! skipping it (\"{}\") until we find a speaker...".format(
+                            cleanup_str(el.getText())))
+                    continue
+
+                if not curr_paragraph:
+                    logger.warning(
+                        "found a comment but there has been no paragraph so far"
+                        "! skipping it (\"{}\") until we find a paragraph...".format(
+                            cleanup_str(el.getText())))
+                    continue
+
                 speaker = curr_speaker if isinstance(curr_speaker, MDB) \
                     else MDB.find_in_storage(**curr_speaker)
 
@@ -92,6 +123,14 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
 
         # finish still open curr_paragraph
         if curr_paragraph is not None:
+            if not curr_speaker:
+                logger.warning(
+                    "found a open paragraph but there has been no speaker so far"
+                    "! skipping it (\"{}\"), but this should be investigated as it "
+                    "means no speaker in the whole block has been found".format(
+                        cleanup_str(curr_paragraph)))
+                return pms
+
             speaker = curr_speaker if isinstance(curr_speaker, MDB) \
                 else MDB.find_in_storage(**curr_speaker)
 

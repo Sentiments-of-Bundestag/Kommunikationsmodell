@@ -34,7 +34,8 @@ def evaluate_newest_sessions(id_list: List[str]):
                 logging.info(f"Inserting evaluated session '{session_id}' into DB")
 
                 # todo: change janky conversion
-                transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
+                transcript_dict = transcript.dict()
+                #transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
                 transcript_dict['session_id'] = session_id
                 database.update_one("session", {"session_id": session_id}, transcript_dict)
 

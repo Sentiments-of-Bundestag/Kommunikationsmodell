@@ -1,49 +1,67 @@
 import argparse
+import json
 import logging
 from pathlib import Path
 
 import uvicorn
-import json
 
 from cme import database, utils
 from cme.data import read_transcript_xml_file, read_transcripts_json_file
 from cme.domain import Transcript, CommunicationModel
 from cme.extraction import extract_communication_model
 
+logger = logging.getLogger()
+logger.name = "cme"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(name)s [%(levelname).1s]: %(message)s',
+    datefmt='%Y-%m-%d %H:%M')
 database.get_db()
-logging.basicConfig(level=logging.INFO)
 
 
 def manual_mode(args):
 
     for file in args.files:
-        logging.info("reading \"{}\" now...".format(file.as_posix()))
+        logger.info("reading \"{}\" now...".format(file.as_posix()))
         transcripts = list()
 
         if file.suffix.lower() == ".json":
-            logging.info("reading json based transcript file now...")
+            logger.info("reading json based transcript file now...")
             file_content = read_transcripts_json_file(file)
         else:
-            logging.info("reading xml based transcript file now...")
+            logger.info("reading xml based transcript file now...")
             file_content = [read_transcript_xml_file(file)]
 
-        logging.info("extracting communication model now...".format(file.as_posix()))
+        logger.info("extracting communication model now...".format(file.as_posix()))
         for metadata, inter_candidates in file_content:
             transcript = Transcript.from_interactions(metadata=metadata, interactions=extract_communication_model(inter_candidates))
 
+            a = transcript.dict()
+
             # insert into DB
-            session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
-            database.update_one("session", {"session_id": session_id}, json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False)))
+            if not args.dry_run:
+                logger.info("writing transcript into db.")
+                session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
+                database.update_one(
+                    "session",
+                    {
+                        "session_id": session_id
+                    },
+                    json.loads(
+                        transcript.json(
+                            exclude_none=True,
+                            indent=4,
+                            ensure_ascii=False)))
 
             transcripts.append(transcript)
 
         cm = CommunicationModel(transcripts=transcripts)
 
-        # TODO(ralph): I think I need to fix the following db calls after my
-        #  refactoring.
-
-        with open(file.with_suffix(".converted.json"), "w", encoding="utf-8") as o:
-            o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
+        if args.dry_run:
+            out_file: Path = file.with_suffix(".converted.json")
+            logger.info("writing transcripts into {}.".format(out_file.absolute().as_posix()))
+            with open(out_file, "w", encoding="utf-8") as o:
+                o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
 
 
 def server_mode(args):
@@ -68,6 +86,7 @@ def main():
 
     manual_parser = subparsers.add_parser("manual", aliases=["m"])
     manual_parser.add_argument("files", nargs="+", type=Path)
+    manual_parser.add_argument("--dry-run", default=False, action="store_true")
     manual_parser.set_defaults(func=manual_mode)
 
     server_parser = subparsers.add_parser("server", aliases=["s"])

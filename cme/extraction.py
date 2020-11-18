@@ -6,6 +6,9 @@ from typing import Dict, List, Tuple
 from cme.domain import InteractionCandidate, Interaction, MDB, Faction
 
 
+logger = logging.getLogger("cme.extraction")
+
+
 def _build_mdb(person_str):
     # the following lines are a workaround for the somehow not working
     # optional matching group for the Abg. string. If someone finds a way to
@@ -15,6 +18,18 @@ def _build_mdb(person_str):
     if cut_idx >= 0:
         cut_idx = person_str.find(" ", cut_idx)
         person_str = person_str[cut_idx:].strip()
+
+    num_opening_brackets = person_str.count("[")
+    num_closing_brackets = person_str.count("]")
+
+    if num_opening_brackets != num_closing_brackets:
+        logger.warning(
+            "the received person_str \"{}\" contains not the same amount of "
+            "opening brackets as closing brackets. this might become a "
+            "problem shortly after this...".format(person_str))
+
+    if num_opening_brackets > num_closing_brackets:
+        person_str = person_str.lstrip("[")
 
     work_str = person_str
     person_parts = list()
@@ -35,6 +50,8 @@ def _build_mdb(person_str):
     name_parts = [
         p for p in full_name.split(" ")
         if p not in known_titles]
+
+    name_parts = [p for p in name_parts if p]
 
     faction = ""
     for mp in metadata_parts:
@@ -58,7 +75,7 @@ def _extract_comment_interactions(
         candidates: List[InteractionCandidate],
         add_debug_obj: bool = False) -> List[Interaction]:
 
-    human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.+])")
+    human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.*\[+.+])")
     reformatted_interactions = list()
 
     def _extract(text_part: str):
@@ -82,7 +99,8 @@ def _extract_comment_interactions(
                 elif pfr:
                     pr = pfr
                 else:
-                    logging.warning("not handled alternative receiver {}".format(pr))
+                    logger.warning("not handled alternative receiver \"{}\"".format(pr))
+                    pr = None
 
             # extraction of the sender or senders
             phs = human_sender_re.findall(ps)
@@ -112,7 +130,7 @@ def _extract_comment_interactions(
                 pfs = Faction.in_text(ps)
 
                 if len(pfs) == 0:
-                    logging.warning(
+                    logger.warning(
                         "Found no direct sender in \"{}\"! Ignoring the "
                         "message...".format(text_part))
 
@@ -125,7 +143,7 @@ def _extract_comment_interactions(
             words = text_part.split(" ")
 
             if len(words) == 0:
-                logging.warning(
+                logger.warning(
                     "Found a no direct speech message without a sender "
                     "(\"{}\")! Ignoring it now message...".format(text_part))
                 return list()
@@ -136,13 +154,13 @@ def _extract_comment_interactions(
                     last_kw_idx = i
 
             if last_kw_idx < 0:
-                logging.warning(
+                logger.warning(
                     "Found no handled keyword in a non direct speech message "
                     "(\"{}\")! Ignoring it now message...".format(text_part))
                 return list()
 
             relevant_text = " ".join(words[last_kw_idx + 1:])
-            potential_senders = re.split(r"(?:und)|(?:sowie)|,", relevant_text)
+            potential_senders = re.split(r"(?:\sund\s)|(?:\ssowie\s)|(?:,\s)", relevant_text)
 
             found_senders = list()
             for ps in potential_senders:
@@ -158,11 +176,12 @@ def _extract_comment_interactions(
                         _build_mdb(phs[0]),
                         None,
                         text_part))
+
                 else:
                     pfs = Faction.in_text(ps)
 
                     if len(pfs) == 0:
-                        logging.warning(
+                        logger.warning(
                             "Found no direct sender in \"{}\"! Ignoring the "
                             "message...".format(text_part))
 
@@ -198,7 +217,7 @@ def _extract_comment_interactions(
                         receiver = curr_cand.speaker
 
                     if not receiver:
-                        logging.warning("Couldn't find a receiver for \"{}\"".format(part))
+                        logger.warning("Couldn't find a receiver for \"{}\"".format(part))
                         continue
 
                     inter = {
@@ -215,7 +234,7 @@ def _extract_comment_interactions(
 
                     reformatted_interactions.append(Interaction(**inter))
             else:
-                logging.warning("Couldn't extract a message from \"{}\". "
+                logger.warning("Couldn't extract a message from \"{}\". "
                                 "dropping it now...".format(part))
 
     return reformatted_interactions
@@ -262,7 +281,7 @@ def _fix_sender_and_receivers(interactions):
                 r_person_map[tuple(sorted(obj.items()))] = found_id
 
         if not found_id:
-            logging.warning("received a unhandled {} as a receiver or sender to fix!".format(obj))
+            logger.warning("received a unhandled {} as a receiver or sender to fix!".format(obj))
 
         return found_id
 

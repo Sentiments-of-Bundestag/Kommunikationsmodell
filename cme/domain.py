@@ -4,8 +4,12 @@ place"""
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Dict, Set, Tuple, Union
+import logging
 
 from pydantic import BaseModel
+
+
+logger = logging.getLogger("cme.domain")
 
 
 # is domain really needed?
@@ -31,13 +35,13 @@ class Faction(Enum):
                     "Christlich-Soziale Union", "Union", "Schwarz"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
             "Sozialdemokrat", "Rot"])
-    DIE_LINKE = (["DIE LINKE", "Die Linke", "Linke" "Linkspartei", "Rot"])
-    DIE_GRÜNEN = (["BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
+    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke" "Linkspartei", "Rot"])
+    DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
                    "Die Grünen", "Bündnis 90", "Grün"])
     AFD = (["AfD", "Alternative für Duetschland", "Blau"])
     FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
             "Liberale", "Gelb"])
-    NONE = (["Fraktionslos"])
+    NONE = (["Fraktionslos", "fraktionslos"])
 
     # historical factions
     #GB_AND_BHE = (["GB/BHE", "BHE", "Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten"])
@@ -69,7 +73,11 @@ class Faction(Enum):
             if name in var._possible_names:
                 return var
 
-        raise KeyError()
+        logger.warning(
+            "received invalid value \"{}\" as faction name! returning "
+            "Faction.NONE...".format(name))
+
+        return Faction.NONE
 
     @classmethod
     def from_bundestag_od_id(cls, bf_id: str) -> "Faction":
