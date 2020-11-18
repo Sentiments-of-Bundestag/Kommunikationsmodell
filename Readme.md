@@ -12,44 +12,62 @@ The desired workflow with teams working before and after the communication model
 
 ## Installation
 
-The project is structured as an installable python package. Therefore it can be installed through pip and will install 
-all needed dependencies in this case.
+For installation, you need two services
+1. The API, which also contains the `Communication Model Extractor` (or `cme` for short) and all the business logic.
+2. A mongodb.
 
-To install it you just have to clone the repo and run `pip install .`, but it should be noted that this will install the
-cme and dependencies system wide and **can potentially break your system package manager**! If it is not desired to 
-install it system wide it makes sense to build a python [venv](https://docs.python.org/3/library/venv.html) in which you
-can safely install the package and needed other packages.
+### API
 
-If you want to change the code it should also be noted that the package can be installed in the so called development 
-mode. Doing so makes it possible to run changed code without having to reinstall the package to do so. To install it in 
-dev mode just run `pip install -e .` in the root dir of the repository.
+The project is structured as an installable python package. We highly recommend setting up a 
+[venv](https://docs.python.org/3/library/venv.html). Either way, you can install it and all it's dependencies with:
+```bash
+pip install .
+```
 
+Or, to not reinstall during development, use the dev mode:
+```
+pip install -e .
+```
+
+Now, `cme` should be an available executable. 
+
+### mongodb
+
+The mongodb can be spin up with
+```bash
+docker-compose up
+``` 
+
+You can also host it locally, we're using port `27017`
 ## Usage
 
-After the installation `cme` should be an available executable and can than either be used in manual or server mode.
+Once the API oder `cme` features a manual or server mode.
+
+### Manual Mode
 
 Manual mode allows you to convert input data from a file instead of waiting for a request to our REST API. The mode can 
-be triggered by running: `cme manual` or `cme m`
+be triggered by running: 
+```bash
+cme manual
+```
 
-In contrast to that the server mode will start up our REST API endpoints and will wait for requests from group 1 or 3 
-to do anything. To run `cme` in server mode just run: `cme server` or `cme s`
+### Server Mode
+The server mode will start up our REST API endpoints and will wait for requests from group 1 or 3 
+to do anything. To run `cme` in server mode just run:
+```bash
+cme server
+```
 
-Besides the two modes there are several flags which can be used to configure the behaviour of `cme`. To explore those 
+### Flags
+There are several flags which can be used to configure the behaviour of `cme`. To explore those 
 just run `cme --help` or `cme -h`.
 
 ## API
 
-Different endpoints:
-* /cm/data/ - for getting notified about updated data and new sessions to evaluate
-* /cm/data/session(s) - offer endpoints to retrieve our evaluated sessions containing a list of interactions between persons & factions 
+The api will offer multiple endpoints which will be fully disclosed in a soon to come swagger-api documentation.
 
-## Database
+There will be at least the following endpoints:
 
-- mongoDB
-- install and start as a daemon, accessible through port 27017 
-    mac: brew
-    linux: systemctl
-    
 
 This project retrieves the protocols from another group via direct DB access. For that you will have to set the following environment variables:
 ```
@@ -58,9 +76,18 @@ export CRAWL_DB_PASSWORD=""
 export CRAWL_DB_IP=""
 ``` 
 
-## Supporter
+* `/cme/data/` - for getting notified about updated data and new sessions to evaluate
+* `/cme/data/session(s)` - offer endpoints to retrieve our evaluated sessions containing a list of interactions between
+ persons & factions 
 
-* Max Lüdemann
-* Ralph Schlett
-* Oskar Sailer
-* Youri Seichter
+- mongoDB
+- install and start as a daemon, accessible through port 27017 
+    mac: brew
+    linux: systemctl
+
+## Main Supporter
+
+* Max Lüdemann @menno4000
+* Ralph Schlett @aradar
+* Oskar Sailer @d064467
+* Youri Seichter @medizinmensch
