@@ -47,7 +47,7 @@ def get_crawler_db():
             "Please provide CRAWL_DB_USER, CRAWL_DB_PASSWORD and CRAWL_DB_IP as env var's to access crawler DB.")
         return None
 
-    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/?authSource={db_name}"
+    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/{db_name}"
     try:
         client = MongoClient(db_url, tz_aware=True, serverSelectionTimeoutMS=10000)
         crawl_db = client[db_name]
@@ -67,9 +67,17 @@ def find_one(collection_name: str, query: dict) -> dict:
     return db[collection_name].find_one(query)
 
 
+def find_all_ids(collection_name: str, attribute_name: str):
+    result = db[collection_name].find({}, {attribute_name: 1})
+    return [session['session_id'] for session in result]
+
+
 def find_many(collection_name: str, query: dict) -> list:
     cursor = db[collection_name].find(query)
-    return cursor.to_list(None)
+    list = []
+    for item in cursor:
+        list.append(item)
+    return list
 
 
 def insert_many(collection_name: str, query: list) -> None:

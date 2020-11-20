@@ -39,6 +39,7 @@ docker-compose up
 ``` 
 
 You can also host it locally, we're using port `27017`
+
 ## Usage
 
 Once the API oder `cme` features a manual or server mode.
@@ -77,8 +78,9 @@ export CRAWL_DB_IP=""
 ``` 
 
 * `/cme/data/` - for getting notified about updated data and new sessions to evaluate
-* `/cme/data/session(s)` - offer endpoints to retrieve our evaluated sessions containing a list of interactions between
- persons & factions 
+* `/cme/data/session/{session_id}` - to retrieve a specific session
+* `/cme/data/sessions` - to get a list of all existing sessions with their respective ID
+* `/cme/data/period/{legislative_period}` - to retrieve all sessions in the given period
 
 - mongoDB
 - install and start as a daemon, accessible through port 27017 
