@@ -1,13 +1,12 @@
 """This module contains all our internally used data structures in a central
 place"""
-
 from datetime import datetime
 from enum import Enum
+from cme import database
 from typing import List, Optional, Dict, Set, Tuple, Union
-import logging
+import logging, uuid, json
 
 from pydantic import BaseModel
-
 
 logger = logging.getLogger("cme.domain")
 
@@ -149,19 +148,26 @@ class MDB(BaseModel):
             forename: str,
             surname: str,
             memberships: List[Tuple[datetime, Optional[datetime], Faction]],
+            mdb_number: Optional[str] = "",
             birthday: Optional[datetime] = None,
             birthplace: Optional[str] = None,
             title: Optional[str] = None,
             job_title: Optional[str] = None) -> "MDB":
 
-        mdb_id = mdb_name_map.get((forename, surname))
-        if not mdb_id:
-            global next_mdb_id
-            mdb_id = "MDB{:06d}".format(next_mdb_id)
-            next_mdb_id += 1
+        mdb = None
+
+        if not mdb_number:
+            mdb = database.find_one("mdb", {"mdb_number": mdb_number})
+
+        if not mdb:
+            mdb = database.find_one("mdb", {"forename": forename, "surname": surname})
+
+        if not mdb:
+            mdb_id = f"MDB-{uuid.uuid4()}"
 
             mdb = cls(
                 speaker_id=mdb_id,
+                mdb_number=mdb_number,
                 forename=forename,
                 surname=surname,
                 memberships=memberships,
@@ -170,10 +176,10 @@ class MDB(BaseModel):
                 title=title,
                 job_title=job_title)
 
-            mdb_storage[mdb_id] = mdb
-            mdb_name_map[(forename, surname)] = mdb_id
+            database.update_one("mdb", {"_id": mdb_id},
+                                json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)))
 
-        return mdb_storage[mdb_id]
+        return mdb
 
     # todo: we need a persistent mapping somewhere here to safely get MDBs
     #  from the db and return the MDB object based on them or add them to the

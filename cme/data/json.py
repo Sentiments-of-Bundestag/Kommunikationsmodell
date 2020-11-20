@@ -97,6 +97,7 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
     conv_map = dict()
     for k, v in speaker_map.items():
         conv_map[v["id"]] = MDB.find_in_storage(
+            mdb_number=v["id"],
             forename=v["vorname"],
             surname=v["nachname"],
             memberships=_fix_factions(v.get("fraktions", list())),

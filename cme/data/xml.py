@@ -57,7 +57,8 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     "forename": first_name,
                     "surname": last_name,
                     "memberships": [(datetime.min, None, Faction.NONE)],
-                    "title": role}
+                    "title": role
+                }
             elif el.name == "rede":
                 pms += _extract(el, curr_speaker, curr_paragraph)
             elif el.name == "p":
@@ -70,11 +71,14 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     if ":" in faction_txt:
                         faction_txt = faction_txt.split(":")[0].strip()
 
+                    # TODO: Proper name and integrate into find_in_storage
                     curr_speaker = {
+                        "mdb_number": el.redner.get("id"),
                         "forename": _safe_get_text(el.redner, "vorname"),
                         "surname": _safe_get_text(el.redner, "nachname"),
                         "memberships": [(datetime.min, None, Faction.from_name(faction_txt))],
                         "title": _safe_get_text(el.redner, "rolle_lang")}
+
                 elif category in ["J", "J_1", "O", "Z"]:
                     new_para_str = cleanup_str(el.getText())
                     if curr_paragraph is not None:
