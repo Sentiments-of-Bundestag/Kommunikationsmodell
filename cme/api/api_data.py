@@ -32,7 +32,13 @@ async def get_session(session_id: str):
     return session
 
 
-@router.get("/sessions/{legislative_period}", status_code=HTTP_200_OK, tags=['data'])
+@router.get("/sessions/", status_code=HTTP_200_OK, tags=['data'])
+async def get_session_ids():
+    session_ids = database.find_all_ids('session', 'session_id')
+    return session_ids
+
+
+@router.get("/period/{legislative_period}", status_code=HTTP_200_OK, tags=['data'])
 async def get_all_sessions_in_legislative_period(legislative_period: int):
     # todo: add pagination
     # id = legislative period: 19
