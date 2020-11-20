@@ -4,6 +4,8 @@ import logging
 import time
 from datetime import datetime
 from typing import Dict, Tuple
+import requests
+import os
 
 from cme import database
 
@@ -129,3 +131,12 @@ def get_crawled_session(session_id: str) -> dict:
         logging.info(f"Successful retrieved session '{session_id}' from external DB")
         return session
     return {}
+
+
+def notify_sentiment_analysis_group(session_list: list):
+    # todo: update when group 3 has data
+    sentiment_analysis_ip = os.environ.get("SENTIMENT_ANALYSIS_IP")
+    url = f"{sentiment_analysis_ip}/update"
+    response = requests.post(url, json=session_list)
+    if response.status_code in [200, 204]:
+        logging.info(f"Successfully notified sentiment analysis about updated sessions")
