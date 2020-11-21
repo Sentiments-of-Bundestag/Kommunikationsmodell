@@ -20,6 +20,7 @@ database.get_db()
 
 
 def manual_mode(args):
+    #strange_chars = set()
 
     for file in args.files:
         logger.info("reading \"{}\" now...".format(file.as_posix()))
@@ -34,6 +35,7 @@ def manual_mode(args):
 
         logger.info("extracting communication model now...".format(file.as_posix()))
         for metadata, inter_candidates in file_content:
+
             transcript = Transcript.from_interactions(metadata=metadata, interactions=extract_communication_model(inter_candidates))
 
             # insert into DB
@@ -51,11 +53,19 @@ def manual_mode(args):
 
         cm = CommunicationModel(transcripts=transcripts)
 
+        #from cme.utils import find_non_ascii_chars
+        #strange_chars.update(find_non_ascii_chars(transcripts))
+
         if args.dry_run:
             out_file: Path = file.with_suffix(".converted.json")
             logger.info("writing transcripts into {}.".format(out_file.absolute().as_posix()))
             with open(out_file, "w", encoding="utf-8") as o:
                 o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
+
+    #for char in strange_chars:
+    #    print(
+    #        "repr:", char,
+    #        "unicode escape:", char.encode("raw_unicode_escape"))
 
 
 def server_mode(args):

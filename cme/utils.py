@@ -1,11 +1,13 @@
 import asyncio
+import inspect
 import json
 import logging
 import time
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any, Set
 import requests
 import os
+import re
 
 from cme import database
 
@@ -50,27 +52,79 @@ def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DM
 
 
 def cleanup_str(str_to_fix):
-    str_to_fix = str_to_fix.replace(u"\xa0", " ")  # Zs NO - BREAK SPACE
-    str_to_fix = str_to_fix.replace(u"\u1680", " ")  # Zs OGHAM SPACE MARK
-    str_to_fix = str_to_fix.replace(u"\u180e", " ")  # Zs MONGOLIAN VOWEL SEPARATOR
-    str_to_fix = str_to_fix.replace(u"\u2000", " ")  # Zs EN QUAD
-    str_to_fix = str_to_fix.replace(u"\u2001", " ")  # Zs EM QUAD
-    str_to_fix = str_to_fix.replace(u"\u2002", " ")  # Zs EN SPACE
-    str_to_fix = str_to_fix.replace(u"\u2003", " ")  # Zs EM SPACE
-    str_to_fix = str_to_fix.replace(u"\u2004", " ")  # Zs THREE - PER - EM SPACE
-    str_to_fix = str_to_fix.replace(u"\u2005", " ")  # Zs FOUR - PER - EM SPACE
-    str_to_fix = str_to_fix.replace(u"\u2006", " ")  # Zs SIX - PER - EM SPACE
-    str_to_fix = str_to_fix.replace(u"\u2007", " ")  # Zs FIGURE SPACE
-    str_to_fix = str_to_fix.replace(u"\u2008", " ")  # Zs PUNCTUATION SPACE
-    str_to_fix = str_to_fix.replace(u"\u2009", " ")  # Zs THIN SPACE
-    str_to_fix = str_to_fix.replace(u"\u200a", " ")  # Zs HAIR SPACE
-    str_to_fix = str_to_fix.replace(u"\u2028", " ")  # Zl LINE SEPARATOR
-    str_to_fix = str_to_fix.replace(u"\u2029", " ")  # Zp PARAGRAPH SEPARATOR
-    str_to_fix = str_to_fix.replace(u"\u202f", " ")  # Zs NARROW NO - BREAK SPACE
-    str_to_fix = str_to_fix.replace(u"\u205f", " ")  # Zs MEDIUM MATHEMATICAL SPACE
-    str_to_fix = str_to_fix.replace(u"\u3000", " ")  # Zs IDEOGRAPHIC SPACE
+
+    def _replace(value, chars, replacement) -> str:
+        for char in chars:
+            value = value.replace(char, replacement)
+        return value
+
+    alternative_spaces = {
+        u"\xa0",    # NO - BREAK SPACE
+        u"\u1680",  # OGHAM SPACE MARK
+        u"\u180e",  # MONGOLIAN VOWEL SEPARATOR
+        u"\u2000",  # EN QUAD
+        u"\u2001",  # EM QUAD
+        u"\u2002",  # EN SPACE
+        u"\u2003",  # EM SPACE
+        u"\u2004",  # THREE - PER - EM SPACE
+        u"\u2005",  # FOUR - PER - EM SPACE
+        u"\u2006",  # SIX - PER - EM SPACE
+        u"\u2007",  # FIGURE SPACE
+        u"\u2008",  # PUNCTUATION SPACE
+        u"\u2009",  # THIN SPACE
+        u"\u200a",  # HAIR SPACE
+        u"\u2028",  # LINE SEPARATOR
+        u"\u2029",  # PARAGRAPH SEPARATOR
+        u"\u202f",  # NARROW NO - BREAK SPACE
+        u"\u205f",  # MEDIUM MATHEMATICAL SPACE
+        u"\u3000"   # IDEOGRAPHIC SPACE
+    }
+
+    alternative_dashes = {
+        u"\u2011",  # Non-Breaking Hyphen
+        u"\u2012",  # Figure Dash
+        # we are keeping \u2013 for the moment as those are used for the
+        # comment separation by the bundestag in the files
+        #u"\u2013",  # En Dash
+    }
+
+    alt_double_quotes = {
+        u"\u201c",
+        u"\u201e",
+    }
+
+    alt_single_quotes = {
+        u"\u2018",
+        u"\u2019",
+        u"\u02bc",
+    }
+
+    str_to_fix = _replace(str_to_fix, alternative_spaces, " ")
+    str_to_fix = _replace(str_to_fix, alternative_dashes, "-")
+    str_to_fix = _replace(str_to_fix, alt_double_quotes, "\"")
+    str_to_fix = _replace(str_to_fix, alt_single_quotes, "\'")
 
     return str_to_fix
+
+
+def find_non_ascii_chars(obj: Any) -> Set[str]:
+    found_chars = set()
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            found_chars.update(find_non_ascii_chars(k))
+            found_chars.update(find_non_ascii_chars(v))
+    elif isinstance(obj, (list, tuple, set)):
+        for v in obj:
+            found_chars.update(find_non_ascii_chars(v))
+    elif hasattr(obj, "__dict__"):
+        found_chars.update(find_non_ascii_chars(obj.__dict__))
+    elif isinstance(obj, str):
+        for char in obj:
+            strange_char = re.sub("[ -~]", "", char)
+            if strange_char:
+                found_chars.add(strange_char)
+
+    return found_chars
 
 
 def split_name_str(person_str) -> Tuple[str, str, str, str]:
