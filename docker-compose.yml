@@ -6,10 +6,15 @@ services:
     container_name: cme_mongodb
     volumes:
       - db-volume:/data/db
+      - configdb-volume:/data/configdb
     networks:
       - internal
+    environment:
+      - "MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}"
+      - "MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}"
 volumes:
   db-volume: {}
+  configdb-volume: {}
 networks:
-  internal:
+  internal: {}
     internal: true
