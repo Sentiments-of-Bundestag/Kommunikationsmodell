@@ -13,7 +13,7 @@ echo ""
 
 echo "starting services"
 echo "----------------------------------------"
-docker-compose --env-file ./.env.dev up 
+docker-compose -f ./docker-compose.dev.yml --env-file ./.env.dev up 
 echo ""
 
 echo "dropping cme_* services"

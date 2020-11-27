@@ -1,4 +1,5 @@
 # Project
+.env.prod
 resources/plenarprotokolle/group_1/*
 resources/plenarprotokolle/all/
 !resources/plenarprotokolle/group_1/19_181_187.json
