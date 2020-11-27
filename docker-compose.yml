@@ -2,9 +2,14 @@ services:
   mongodb:
     image: mongo:latest
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     container_name: cme_mongodb
     volumes:
       - db-volume:/data/db
+    networks:
+      - internal
 volumes:
   db-volume: {}
+networks:
+  internal:
+    internal: true
