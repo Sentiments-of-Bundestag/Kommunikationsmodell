@@ -5,6 +5,7 @@ from pathlib import Path
 
 import uvicorn
 
+import csv
 from cme import database, utils
 from cme.data import read_transcript_xml_file, read_transcripts_json_file
 from cme.domain import Transcript, CommunicationModel
@@ -20,7 +21,7 @@ database.get_db()
 
 
 def manual_mode(args):
-    #strange_chars = set()
+    # strange_chars = set()
 
     for file in args.files:
         logger.info("reading \"{}\" now...".format(file.as_posix()))
@@ -36,7 +37,8 @@ def manual_mode(args):
         logger.info("extracting communication model now...".format(file.as_posix()))
         for metadata, inter_candidates in file_content:
 
-            transcript = Transcript.from_interactions(metadata=metadata, interactions=extract_communication_model(inter_candidates))
+            transcript = Transcript.from_interactions(metadata=metadata,
+                                                      interactions=extract_communication_model(inter_candidates))
 
             # insert into DB
             if not args.dry_run:
@@ -53,8 +55,8 @@ def manual_mode(args):
 
         cm = CommunicationModel(transcripts=transcripts)
 
-        #from cme.utils import find_non_ascii_chars
-        #strange_chars.update(find_non_ascii_chars(transcripts))
+        # from cme.utils import find_non_ascii_chars
+        # strange_chars.update(find_non_ascii_chars(transcripts))
 
         if args.dry_run:
             out_file: Path = file.with_suffix(".converted.json")
@@ -62,10 +64,24 @@ def manual_mode(args):
             with open(out_file, "w", encoding="utf-8") as o:
                 o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
 
-    #for char in strange_chars:
-    #    print(
-    #        "repr:", char,
-    #        "unicode escape:", char.encode("raw_unicode_escape"))
+    if args.export_mdbs:
+        filename = "mdbs_debug.csv"
+        mdbs = database.find_many("mdb", {})
+        mdbs = [(v['forename'], v['surname']) for v in mdbs]
+        # mdbs = [(utils.cleanup_str(v['forename']), utils.cleanup_str(v['surname'])) for v in mdbs]
+        from cme.utils import find_non_ascii_chars
+        strange_chars = find_non_ascii_chars(mdbs)
+        for char in strange_chars:
+            print(
+                "repr:", char,
+                "unicode escape:", char.encode("raw_unicode_escape"))
+
+        with open(filename, "w", encoding="utf-8") as o:
+            w = csv.writer(o, quotechar="\"", quoting=csv.QUOTE_ALL)
+            w.writerow(["forename", "surname"])
+            w.writerows(mdbs)
+            logger.info(f"{filename} exported")
+
 
 
 def server_mode(args):
@@ -91,6 +107,7 @@ def main():
     manual_parser = subparsers.add_parser("manual", aliases=["m"])
     manual_parser.add_argument("files", nargs="+", type=Path)
     manual_parser.add_argument("--dry-run", default=False, action="store_true")
+    manual_parser.add_argument("--export-mdbs", default=False, action="store_true")
     manual_parser.set_defaults(func=manual_mode)
 
     server_parser = subparsers.add_parser("server", aliases=["s"])
@@ -109,4 +126,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -6,7 +6,7 @@ from typing import List, Tuple
 from bs4 import BeautifulSoup, element as bs4e
 
 from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
-from cme.utils import cleanup_str, split_name_str, build_datetime
+from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars
 
 
 logger = logging.getLogger("cme.data")
@@ -54,8 +54,8 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                 role, title, first_name, last_name = split_name_str(
                     cleanup_str(el.getText().rstrip(":")))
                 curr_speaker = {
-                    "forename": first_name,
-                    "surname": last_name,
+                    "forename": cleanup_str(first_name),
+                    "surname": cleanup_str(last_name),
                     "memberships": [(datetime.min, None, Faction.NONE)],
                     "title": role
                 }
@@ -171,5 +171,6 @@ def read_transcript_xml_file(
         metadata = _extract_metadata_xml(root_el)
 
         candidates = _extract_paragraphs_xml(root_el)
+        find_non_ascii_chars(candidates)
 
     return metadata, candidates

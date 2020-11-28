@@ -7,13 +7,13 @@ import motor.motor_asyncio
 from pymongo.errors import ServerSelectionTimeoutError
 
 db = None
-DB_USER = None
-DB_PASSWORD = None
-DB_HOST_PORT = "localhost:27017"
+
+DB_USER = os.environ.get("DB_MONGO_STD_USERNAME")
+DB_PASSWORD = os.environ.get("DB_MONGO_STD_PASSWORD")
+DB_HOST_PORT = "cme_mongodb:27017"
 DB_DB = "cme_data"
 
 crawl_db = None
-
 
 def get_db():
     global db
@@ -95,3 +95,4 @@ def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
     if result.modified_count == 1:
         return True
     return False
+

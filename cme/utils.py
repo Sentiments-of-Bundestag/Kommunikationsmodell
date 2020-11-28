@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Any, Set
 import requests
 import os
 import re
+import unicodedata
 
 from cme import database
 
@@ -60,6 +61,7 @@ def cleanup_str(str_to_fix):
 
     alternative_spaces = {
         u"\xa0",    # NO - BREAK SPACE
+        u"\xad",    # Soft Hyphen
         u"\u1680",  # OGHAM SPACE MARK
         u"\u180e",  # MONGOLIAN VOWEL SEPARATOR
         u"\u2000",  # EN QUAD
