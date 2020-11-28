@@ -1,20 +1,30 @@
+version: "3.8"
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - internal
+    container_name: "cme_api"
+    ports:
+      - "9001:9001"
   mongodb:
     image: mongo:latest
-    ports:
-      - "127.0.0.1:27017:27017"
+    networks:
+      - internal
+    expose:
+      - "27017"
     container_name: cme_mongodb
     volumes:
       - db-volume:/data/db
       - configdb-volume:/data/configdb
-    networks:
-      - internal
     environment:
       - "MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}"
       - "MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}"
 volumes:
-  db-volume: {}
-  configdb-volume: {}
+  db-volume: { }
+  configdb-volume: { }
 networks:
-  internal:
-    internal: true
+  internal: { }
+#    internal: true

@@ -7,4 +7,4 @@ RUN cd /tmp/cme \
 
 RUN rm -r /tmp/cme
 
-CMD cme server
+CMD cme server --host 0.0.0.0 --port 9001
