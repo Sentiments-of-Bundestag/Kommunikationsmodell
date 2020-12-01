@@ -7,7 +7,7 @@ import uvicorn
 
 import csv
 from cme import database, utils
-from cme.data import read_transcript_xml_file, read_transcripts_json_file
+from cme.data import read_transcript_xml_file, read_transcripts_json_file, import_clients
 from cme.domain import Transcript, CommunicationModel
 from cme.extraction import extract_communication_model
 
@@ -91,6 +91,8 @@ def server_mode(args):
         "log_level": args.log_level,
         "reload": args.reload
     }
+
+    import_clients.main()
 
     uvicorn.run("cme.api.api:app", **uvicorn_kwargs)
 
