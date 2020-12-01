@@ -142,15 +142,14 @@ class MDB(BaseModel):
             forename: str,
             surname: str,
             memberships: List[Tuple[datetime, Optional[datetime], Faction]],
-            mdb_number: Optional[str] = "",
+            mdb_number: Optional[str] = None,
             birthday: Optional[datetime] = None,
             birthplace: Optional[str] = None,
             title: Optional[str] = None,
             job_title: Optional[str] = None) -> "MDB":
 
         mdb = None
-
-        if not mdb_number:
+        if mdb_number:
             mdb = database.find_one("mdb", {"mdb_number": mdb_number})
 
         if not mdb:
@@ -170,7 +169,7 @@ class MDB(BaseModel):
                 title=title,
                 job_title=job_title)
 
-            database.update_one("mdb", {"_id": mdb_id},
+            database.update_one("mdb", {"speaker_id": mdb_id},
                                 json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)))
 
         return mdb
