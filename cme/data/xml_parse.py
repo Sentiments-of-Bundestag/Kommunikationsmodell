@@ -6,7 +6,7 @@ from typing import List, Tuple
 from bs4 import BeautifulSoup, element as bs4e
 
 from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
-from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars
+from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars, logging_is_needed
 
 logger = logging.getLogger("cme.data")
 
@@ -82,10 +82,10 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     new_para_str = cleanup_str(el.getText())
                     if curr_paragraph is not None:
                         if not curr_speaker:
-                            logger.warning(
-                                "found a new paragraph but couldn't finish "
-                                "the old one as there has been no speaker so "
-                                "far! dropping the old one (\"{}\") now...".format(curr_paragraph))
+                            #logger.warning(
+                            #    "found a new paragraph but couldn't finish "
+                            #    "the old one as there has been no speaker so "
+                            #    "far! dropping the old one (\"{}\") now...".format(curr_paragraph))
                             curr_paragraph = new_para_str
                             continue
 
@@ -102,10 +102,11 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                                  "p.".format(category))
             elif el.name == "kommentar":
                 if not curr_speaker:
-                    logger.warning(
-                        "found a comment but there has been no speaker so far"
-                        "! skipping it (\"{}\") until we find a speaker...".format(
-                            cleanup_str(el.getText())))
+                    if logging_is_needed(el.getText()):
+                        logger.warning(
+                            "found a comment but there has been no speaker so far"
+                            "! skipping it (\"{}\") until we find a speaker...".format(
+                                cleanup_str(el.getText())))
                     continue
 
                 if not curr_paragraph:

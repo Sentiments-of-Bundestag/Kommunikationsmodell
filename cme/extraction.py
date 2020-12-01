@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 from cme.domain import InteractionCandidate, Interaction, MDB, Faction
+from cme import utils
 
 
 logger = logging.getLogger("cme.extraction")
@@ -129,7 +130,7 @@ def _extract_comment_interactions(
             else:
                 pfs = Faction.in_text(ps)
 
-                if len(pfs) == 0:
+                if len(pfs) == 0 and utils.logging_is_needed(text_part):
                     logger.warning(
                         "Found no direct sender in \"{}\"! Ignoring the "
                         "message...".format(text_part))
@@ -139,7 +140,8 @@ def _extract_comment_interactions(
         else:
             keywords = {
                 "Beifall", "Zuruf", "Heiterkeit", "Zurufe", "Lachen",
-                "Wiederspruch", "Widerspruch"}
+                "Wiederspruch", "Widerspruch", "Gegenrufe", "Buhrufe", "Pfiffe"}
+
             words = text_part.split(" ")
 
             if len(words) == 0:
@@ -154,9 +156,10 @@ def _extract_comment_interactions(
                     last_kw_idx = i
 
             if last_kw_idx < 0:
-                logger.warning(
-                    "Found no handled keyword in a non direct speech message "
-                    "(\"{}\")! Ignoring it now message...".format(text_part))
+                if utils.logging_is_needed(text_part):
+                    logger.warning(
+                        "Found no handled keyword in a non direct speech message "
+                        "(\"{}\")! Ignoring it now message...".format(text_part))
                 return list()
 
             relevant_text = " ".join(words[last_kw_idx + 1:])
@@ -180,7 +183,7 @@ def _extract_comment_interactions(
                 else:
                     pfs = Faction.in_text(ps)
 
-                    if len(pfs) == 0:
+                    if len(pfs) == 0 and utils.logging_is_needed(text_part):
                         logger.warning(
                             "Found no direct sender in \"{}\"! Ignoring the "
                             "message...".format(text_part))
@@ -234,8 +237,9 @@ def _extract_comment_interactions(
 
                     reformatted_interactions.append(Interaction(**inter))
             else:
-                logger.warning("Couldn't extract a message from \"{}\". "
-                                "dropping it now...".format(part))
+                if utils.logging_is_needed(part):
+                    logger.warning("Couldn't extract a message from \"{}\". "
+                                   "dropping it now...".format(part))
 
     return reformatted_interactions
 

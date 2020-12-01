@@ -49,7 +49,7 @@ def manual_mode(args):
                     {
                         "session_id": session_id
                     },
-                    transcript.dict())
+                    transcript.dict(exclude_none=True))
 
             transcripts.append(transcript)
 

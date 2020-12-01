@@ -13,6 +13,9 @@ from fastapi.security import HTTPBasicCredentials
 from cme import database
 from cme.api import error
 
+IGNORED_KEYWORDS = ["Zwischenfrage", "Gegenfrage", "Unruhe", "Glocke der Präsidentin",
+                    "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne", "Heiterkeit", "Nachfrage"]
+
 
 def reverse_dict(dict_obj: Dict) -> Dict:
     def _rebuild_dict(potential_dict: Tuple[Tuple]):
@@ -216,3 +219,11 @@ def get_basic_auth_client(credentials: HTTPBasicCredentials):
         error.raise_401(f"Incorrect credentials 3 for client '{credentials.username}'")
 
     return
+
+
+def logging_is_needed(message: str) -> bool:
+    if message == "Beifall" or message == "" or message == "()":
+        return False
+    if any(keyword in message for keyword in IGNORED_KEYWORDS):
+        return False
+    return True
