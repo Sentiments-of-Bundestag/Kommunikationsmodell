@@ -11,12 +11,6 @@ from pydantic import BaseModel
 logger = logging.getLogger("cme.domain")
 
 
-# is domain really needed?
-# do we need to typecheck some documents?
-# we get list of str from group 1, we have user & faction objects
-# we send our own structure to group 2, so we dont need to validate?
-
-
 class Faction(Enum):
     """Enum representing a Faction in the german bundestag. The values can be
     constructed by name or bundestag opendata faction ids."""

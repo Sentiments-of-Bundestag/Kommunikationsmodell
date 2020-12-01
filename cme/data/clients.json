@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "cme_admin"
+  },
+  {
+    "_id": "sentiment_client"
+  },
+  {
+    "_id": "crawler_client"
+  }
+]

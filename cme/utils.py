@@ -1,16 +1,17 @@
 import asyncio
-import inspect
 import json
 import logging
+import os
+import re
 import time
 from datetime import datetime
 from typing import Dict, Tuple, Any, Set
+
 import requests
-import os
-import re
-import unicodedata
+from fastapi.security import HTTPBasicCredentials
 
 from cme import database
+from cme.api import error
 
 
 def reverse_dict(dict_obj: Dict) -> Dict:
@@ -53,15 +54,14 @@ def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DM
 
 
 def cleanup_str(str_to_fix):
-
     def _replace(value, chars, replacement) -> str:
         for char in chars:
             value = value.replace(char, replacement)
         return value
 
     alternative_spaces = {
-        u"\xa0",    # NO - BREAK SPACE
-        u"\xad",    # Soft Hyphen
+        u"\xa0",  # NO - BREAK SPACE
+        u"\xad",  # Soft Hyphen
         u"\u1680",  # OGHAM SPACE MARK
         u"\u180e",  # MONGOLIAN VOWEL SEPARATOR
         u"\u2000",  # EN QUAD
@@ -79,7 +79,7 @@ def cleanup_str(str_to_fix):
         u"\u2029",  # PARAGRAPH SEPARATOR
         u"\u202f",  # NARROW NO - BREAK SPACE
         u"\u205f",  # MEDIUM MATHEMATICAL SPACE
-        u"\u3000"   # IDEOGRAPHIC SPACE
+        u"\u3000"  # IDEOGRAPHIC SPACE
     }
 
     alternative_dashes = {
@@ -87,7 +87,7 @@ def cleanup_str(str_to_fix):
         u"\u2012",  # Figure Dash
         # we are keeping \u2013 for the moment as those are used for the
         # comment separation by the bundestag in the files
-        #u"\u2013",  # En Dash
+        # u"\u2013",  # En Dash
     }
 
     alt_double_quotes = {
@@ -196,3 +196,23 @@ def notify_sentiment_analysis_group(session_list: list):
     response = requests.post(url, json=session_list)
     if response.status_code in [200, 204]:
         logging.info(f"Successfully notified sentiment analysis about updated sessions")
+
+
+def get_basic_auth_client(credentials: HTTPBasicCredentials):
+    # on dev landscape allow without authentication
+    if os.environ.get("LANDSCAPE") == 'dev':
+        logging.info("Skipping auth because on dev landscape.")
+        return
+
+    client = database.find_one('client', {'_id': credentials.username})
+    if not client:
+        error.raise_401(f"Incorrect credentials 1 for client '{credentials.username}'")
+
+    try:
+        password = os.environ.get(f"{credentials.username.upper()}_PASSWORD")
+        if credentials.password != password:
+            error.raise_401(f"Incorrect credentials 2 for client '{credentials.username}'")
+    except KeyError:
+        error.raise_401(f"Incorrect credentials 3 for client '{credentials.username}'")
+
+    return

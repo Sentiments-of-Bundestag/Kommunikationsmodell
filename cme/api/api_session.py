@@ -1,27 +1,35 @@
-from fastapi import APIRouter, BackgroundTasks
-from starlette.status import HTTP_200_OK, HTTP_204_NO_CONTENT
-from typing import List
 import logging
+from typing import List
 
-from cme import database
+from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from starlette.status import HTTP_200_OK
+
+from cme import database, utils
 from cme.api import error
-from cme.data import json
+from cme.data import json_parse
 
 router = APIRouter()
+security = HTTPBasic()
 
 
 # for group 1 to give information about new protocols
 @router.post("/", status_code=HTTP_200_OK, tags=[])
-async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks):
+async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks,
+                       credentials: HTTPBasicCredentials = Depends(security)):
+    utils.get_basic_auth_client(credentials)
+
     # create subprocess: background task to get new protocols and iterate over (start parser/cme)
     logging.info(f"Received update request for sessions '{ids}'")
-    background_tasks.add_task(json.evaluate_newest_sessions, ids)
+    background_tasks.add_task(json_parse.evaluate_newest_sessions, ids)
 
-    return {"Message: ": f"Background task has been created to evaluate newest sessions with ids: '{ids}'"}
+    return {"details: ": f"Background task has been created to evaluate newest sessions with ids: '{ids}'"}
 
 
 @router.get("/session/{session_id}", status_code=HTTP_200_OK, tags=['data'])
-async def get_session(session_id: str):
+async def get_session(session_id: str, credentials: HTTPBasicCredentials = Depends(security)):
+    utils.get_basic_auth_client(credentials)
+
     # id = legislative period + session eg: 19177
     session = database.find_one("session", {'session_id': session_id})
 
@@ -32,15 +40,18 @@ async def get_session(session_id: str):
 
 
 @router.get("/sessions/", status_code=HTTP_200_OK, tags=['data'])
-async def get_session_ids():
+async def get_session_ids(credentials: HTTPBasicCredentials = Depends(security)):
+    utils.get_basic_auth_client(credentials)
+
     session_ids = database.find_all_ids('session', 'session_id')
     return session_ids
 
 
 @router.get("/period/{legislative_period}", status_code=HTTP_200_OK, tags=['data'])
-async def get_all_sessions_in_legislative_period(legislative_period: int):
-    # todo: add pagination
-    # id = legislative period: 19
+async def get_all_sessions_in_legislative_period(legislative_period: int,
+                                                 credentials: HTTPBasicCredentials = Depends(security)):
+    utils.get_basic_auth_client(credentials)
+
     sessions = database.find_many("session", {'legislative_period': legislative_period})
     if not sessions:
         error.raise_404(f"No sessions found for legislative period '{legislative_period}'.")
@@ -48,12 +59,3 @@ async def get_all_sessions_in_legislative_period(legislative_period: int):
     for session in sessions:
         del session['_id']
     return sessions
-
-
-
-
-
-# optional endpoints for users & factions:
-# accept new mdb stammdaten?
-# get users by birth range
-# get users for legislative period

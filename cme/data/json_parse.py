@@ -1,12 +1,12 @@
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
-import logging
 from typing import List, Dict, Tuple
 
 from cme import utils, database
+from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction, Transcript
 from cme.extraction import extract_communication_model
-from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction,  Transcript, CommunicationModel
 from cme.utils import build_datetime
 
 
@@ -35,16 +35,15 @@ def evaluate_newest_sessions(id_list: List[str]):
 
                 # todo: change janky conversion
                 transcript_dict = transcript.dict()
-                #transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
+                # transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
                 transcript_dict['session_id'] = session_id
                 database.update_one("session", {"session_id": session_id}, transcript_dict)
 
                 # save to file
-                #with open(f"transcript_{session_id}.json", "w", encoding="utf-8") as o:
+                # with open(f"transcript_{session_id}.json", "w", encoding="utf-8") as o:
                 #    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
 
-
-        #cm = CommunicationModel(transcripts=transcripts)
+        # cm = CommunicationModel(transcripts=transcripts)
 
 
 def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> List[InteractionCandidate]:
@@ -84,7 +83,6 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
 
 
 def _convert_speaker(speaker_map: Dict[str, Dict]):
-
     def _fix_factions(factions) -> List[Tuple[datetime, datetime, Faction]]:
         fixed_factions = list()
         for f in factions:
@@ -112,7 +110,6 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 def read_transcripts_json(
         content: Dict) \
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
-
     converted = list()
 
     for period in content.get("wahlperiode", list()):
@@ -142,8 +139,5 @@ def read_transcripts_json(
 def read_transcripts_json_file(
         file: Path) \
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
-
     with file.open("r") as f:
         return read_transcripts_json(json.load(f))
-
-

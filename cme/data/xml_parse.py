@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, date
+from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup, element as bs4e
 
 from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
 from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars
-
 
 logger = logging.getLogger("cme.data")
 
@@ -100,7 +99,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     curr_paragraph = new_para_str
                 else:
                     logger.debug("Ignoring unhandled category \"{}\" of tag "
-                                  "p.".format(category))
+                                 "p.".format(category))
             elif el.name == "kommentar":
                 if not curr_speaker:
                     logger.warning(
@@ -163,7 +162,6 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
 def read_transcript_xml_file(
         file: Path) \
         -> Tuple[SessionMetadata, List[InteractionCandidate]]:
-
     with file.open(mode="rb") as f:
         soup = BeautifulSoup(f, "xml")
 

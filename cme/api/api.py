@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Analytics Service AS API
+# Communication Model Extractor - CME API
 
 import time
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -16,7 +17,6 @@ from cme.api import api_session, api_doc, api_mdb, api_faction
 
 BASE_PREFIX = "cme"
 
-#config = common.get_config()
 db = database.get_db()
 app = FastAPI()
 
