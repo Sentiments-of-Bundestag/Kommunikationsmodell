@@ -9,8 +9,7 @@ db = None
 
 DB_USER = os.environ.get("DB_MONGO_STD_USERNAME")
 DB_PASSWORD = os.environ.get("DB_MONGO_STD_PASSWORD")
-# todo change back to: "cme_mongodb:27017:"
-DB_HOST_PORT = "localhost:27017"
+DB_HOST_PORT = "cme_mongodb:27017"
 DB_DB = "cme_data"
 
 crawl_db = None
