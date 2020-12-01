@@ -8,8 +8,12 @@ services:
       - internal
     container_name: "cme_api"
     environment:
+      - "LANDSCAPE=${LANDSCAPE}"
       - "DB_MONGO_STD_PASSWORD=${DB_MONGO_STD_PASSWORD}"
       - "DB_MONGO_STD_USERNAME=${DB_MONGO_STD_USERNAME}"
+      - "CME_ADMIN_PASSWORD=${CME_ADMIN_PASSWORD}"
+      - "SENTIMENT_CLIENT_PASSWORD=${SENTIMENT_CLIENT_PASSWORD}"
+      - "CRAWLER_CLIENT_PASSWORD=${CRAWLER_CLIENT_PASSWORD}"
     volumes:
       - ./resources/plenarprotokolle/open_data:/plenarprotokolle/
     ports:
