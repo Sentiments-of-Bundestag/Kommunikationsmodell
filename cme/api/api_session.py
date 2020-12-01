@@ -8,7 +8,6 @@ from cme.api import error
 from cme.data import json
 
 router = APIRouter()
-db = database.get_db()
 
 
 # for group 1 to give information about new protocols
