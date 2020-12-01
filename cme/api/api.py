@@ -12,7 +12,7 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
 
 from cme import database
-from cme.api import api_data
+from cme.api import api_data, api_doc
 
 BASE_PREFIX = "cme"
 
@@ -21,6 +21,7 @@ db = database.get_db()
 app = FastAPI()
 
 app.include_router(api_data.router, prefix=f"/{BASE_PREFIX}/data")
+app.include_router(api_doc.router, prefix=f"/{BASE_PREFIX}/doc")
 
 
 @app.middleware("http")
