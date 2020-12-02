@@ -28,7 +28,7 @@ class Faction(Enum):
                     "Christlich-Soziale Union", "Union", "Schwarz"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
             "Sozialdemokrat", "Rot"])
-    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke" "Linkspartei", "Rot"])
+    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot"])
     DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
                    "Die Grünen", "Bündnis 90", "Grün"])
     AFD = (["AfD", "Alternative für Duetschland", "Blau"])
@@ -124,6 +124,7 @@ next_mdb_id = 0
 # member of german bundestag
 class MDB(BaseModel):
     speaker_id: str
+    mdb_number: Optional[str]
     forename: str
     surname: str
     memberships: List[Tuple[datetime, Optional[datetime], Faction]]
@@ -155,6 +156,15 @@ class MDB(BaseModel):
         if not mdb:
             mdb = database.find_one("mdb", {"forename": forename, "surname": surname})
 
+            # if found through name and mdb_number given -> add to document
+            if mdb and "mdb_number" not in mdb and mdb_number:
+                logging.info(f"Adding mdb_number '{mdb_number}' to mdb '{mdb['speaker_id']}'")
+                mdb['mdb_number'] = mdb_number
+                database.update_one("mdb", {"speaker_id": mdb["speaker_id"]}, {'mdb_number': mdb_number})
+        if mdb:
+            return MDB(**mdb)
+
+        # create new mdb in DB
         if not mdb:
             mdb_id = f"MDB-{uuid.uuid4()}"
 

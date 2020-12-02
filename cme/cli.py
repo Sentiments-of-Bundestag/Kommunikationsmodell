@@ -83,7 +83,6 @@ def manual_mode(args):
             logger.info(f"{filename} exported")
 
 
-
 def server_mode(args):
     uvicorn_kwargs = {
         "host": args.host,
@@ -91,8 +90,6 @@ def server_mode(args):
         "log_level": args.log_level,
         "reload": args.reload
     }
-
-    import_clients.main()
 
     uvicorn.run("cme.api.api:app", **uvicorn_kwargs)
 

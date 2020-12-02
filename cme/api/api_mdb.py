@@ -10,7 +10,7 @@ security = HTTPBasic()
 
 
 @router.get("/mdb", status_code=HTTP_200_OK, tags=['data'])
-async def get_mdb(id: str = "",
+async def get_mdb(mdb_number: str = "",
                   speaker_id: str = "",
                   forename: str = "",
                   surname: str = "",
@@ -18,17 +18,17 @@ async def get_mdb(id: str = "",
     utils.get_basic_auth_client(credentials)
     query = {}
     # unique identifier, so only one object should be returned
-    if id != "":
-        return database.find_many("mdb", {"_id": id})
     if speaker_id != "":
-        return database.find_many("mdb", {"speaker_id": id})
+        return database.find_many("mdb", {"speaker_id": speaker_id}, {"_id": 0})
+    if mdb_number != "":
+        return database.find_many("mdb", {"mdb_number": mdb_number}, {"_id": 0})
 
     # search by multiple params
     if forename != "":
         query['forename'] = forename
     if surname != "":
         query['surname'] = surname
-    users = database.find_many("mdb", query)
+    users = database.find_many("mdb", query, {"_id": 0})
     if not users:
         error.raise_404(f"No mdb's were found for your search query: {query}")
     return users

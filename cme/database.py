@@ -9,7 +9,7 @@ db = None
 
 DB_USER = os.environ.get("DB_MONGO_STD_USERNAME")
 DB_PASSWORD = os.environ.get("DB_MONGO_STD_PASSWORD")
-DB_HOST_PORT = "cme_mongodb:27017"
+DB_HOST_PORT = os.environ.get("DB_MONGO_HOST_PORT")
 DB_DB = "cme_data"
 
 crawl_db = None
@@ -40,7 +40,8 @@ def get_crawler_db():
     user = os.environ.get("CRAWL_DB_USER")
     pw = os.environ.get("CRAWL_DB_PASSWORD")
     crawl_ip = os.environ.get("CRAWL_DB_IP")
-    db_name = "test"
+    db_name = "crawler_db"
+    db_collection = "Protokoll"
 
     if not user or not pw or not crawl_ip:
         logging.error(
@@ -63,7 +64,9 @@ def get_crawler_db():
     return None
 
 
-def find_one(collection_name: str, query: dict) -> dict:
+def find_one(collection_name: str, query: dict, exclude: dict = None) -> dict:
+    if exclude:
+        return db[collection_name].find_one(query, exclude)
     return db[collection_name].find_one(query)
 
 
@@ -72,8 +75,11 @@ def find_all_ids(collection_name: str, attribute_name: str):
     return [session['session_id'] for session in result]
 
 
-def find_many(collection_name: str, query: dict) -> list:
-    cursor = db[collection_name].find(query)
+def find_many(collection_name: str, query: dict, exclude: dict = None) -> list:
+    if exclude:
+        cursor = db[collection_name].find(query, exclude)
+    else:
+        cursor = db[collection_name].find(query)
     list = []
     for item in cursor:
         list.append(item)
