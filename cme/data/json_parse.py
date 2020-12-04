@@ -32,7 +32,8 @@ def evaluate_newest_sessions(id_list: List[str]):
 
         # todo: remove me plx
         logging.error("-" * 80)
-        logging.error(json.dumps(current_session, cls=SafeEncoder))
+        with open("/bla.json", "w") as f:
+            json.dump(current_session, f, cls=SafeEncoder)
 
         file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
@@ -108,12 +109,17 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 
     conv_map = dict()
     for k, v in speaker_map.items():
-        conv_map[v["id"]] = MDB.find_in_storage(
-            mdb_number=v["id"],
+
+        birthday = v.get("geburtsdatum")
+        if isinstance(v, str):
+            birthday = datetime.fromisoformat(birthday)
+
+        conv_map[v["_id"]] = MDB.find_in_storage(
+            mdb_number=v["_id"],
             forename=v["vorname"],
             surname=v["nachname"],
             memberships=_fix_factions(v.get("fraktions", list())),
-            birthday=build_datetime(v.get("geburtsdatum")),
+            birthday=birthday,
             birthplace=v.get("geburtsort"),
             title=v.get("title"),
             job_title=v.get("beruf", ""))
@@ -126,7 +132,7 @@ def read_transcripts_json(
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
     converted = list()
 
-    speaker_map = {r["id"]: r for r in transcript["rednerListe"]}
+    speaker_map = {r["_id"]: r for r in transcript["rednerListe"]}
     speaker_map = _convert_speaker(speaker_map)
     session_elements = transcript["sitzungsverlauf"]
     metadata = SessionMetadata(
