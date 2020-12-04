@@ -31,7 +31,8 @@ def evaluate_newest_sessions(id_list: List[str]):
             return
 
         # todo: remove me plx
-        print(json.dumps(transcripts, cls=SafeEncoder))
+        logging.error("-" * 80)
+        logging.error(json.dumps(current_session, cls=SafeEncoder))
 
         file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
