@@ -46,7 +46,7 @@ def get_crawler_db():
             "Please provide CRAWL_DB_USER, CRAWL_DB_PASSWORD and CRAWL_DB_IP as env var's to access crawler DB.")
         return None
 
-    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/{db_name}"
+    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/{db_name}?authSource=admin"
     try:
         client = MongoClient(db_url, tz_aware=True, serverSelectionTimeoutMS=10000)
         crawl_db = client[db_name]

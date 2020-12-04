@@ -170,9 +170,7 @@ def get_session_id_safe(legislative_period: str, session_no: str) -> str:
 
 
 def get_crawled_session(session_id: str) -> dict:
-    global crawler_db
-    if not crawler_db:
-        crawler_db = database.get_crawler_db()
+    crawler_db = database.get_crawler_db()
 
     if not crawler_db:
         logging.warning("External DB access was not successful. Aborting...")
