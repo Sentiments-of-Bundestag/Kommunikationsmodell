@@ -5,8 +5,6 @@ ADD ./ /tmp/cme
 RUN cd /tmp/cme \
     && pip3 install --no-cache-dir .
 
-RUN python3 data/import_clients.py
-
 RUN rm -r /tmp/cme
 
 CMD cme server --host 0.0.0.0 --port 9001

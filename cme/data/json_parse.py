@@ -65,19 +65,19 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
     candidates = list()
 
     for tp in topic_points:
-        if tp["ablauf_typ"] not in ["sitzungsbeginn", "tagesordnungspunkt"]:
+        if tp["ablaufTyp"] not in ["SITZUNGSBEGINN", "TAGESORDNUNGSPUNKT"]:
             continue
 
         last_paragraph = None
         speeches = tp.get("reden", list())
         for sp in speeches:
             # why is this not in all objects?
-            if "rede_teil" not in sp:
+            if "redeInhalt" not in sp:
                 continue
 
-            speaker = speaker_map[sp["redner_id"]]
+            speaker = speaker_map[sp["rednerId"]]
 
-            for sp_part in sp["rede_teil"]:
+            for sp_part in sp["redeTeil"]:
                 part_type = sp_part["typ"]
                 if last_paragraph is not None and part_type == "Paragraf":
                     candidates.append(InteractionCandidate(
@@ -130,20 +130,25 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 def read_transcripts_json(
         transcript: Dict) \
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
+
+    def _merge_datetimes(datepart, timepart) -> datetime:
+        date_str, _ = datepart.split("T")
+        _, time_str = timepart.split("T")
+        return datetime.fromisoformat(f"{date_str}T{time_str}")
+
     converted = list()
 
     speaker_map = {r["_id"]: r for r in transcript["rednerListe"]}
     speaker_map = _convert_speaker(speaker_map)
     session_elements = transcript["sitzungsverlauf"]
+
     metadata = SessionMetadata(
         session_no=int(transcript["_id"]),
-        legislative_period=int(transcript["id"][:2]),
-        start=build_datetime(
-            transcript["sitzungDatum"],
-            session_elements["sitzungStart"]),
-        end=build_datetime(
-            transcript["sitzungDatum"],
-            session_elements["sitzungEnde"]))
+        legislative_period=int(str(transcript["_id"])[:2]),
+        start=_merge_datetimes(
+            transcript["sitzungDatum"], session_elements["sitzungStart"]),
+        end=_merge_datetimes(
+            transcript["sitzungDatum"], session_elements["sitzungEnde"]))
     candidates = _get_candidates(session_elements["ablaufspunkte"], speaker_map)
     converted.append((metadata, candidates))
 

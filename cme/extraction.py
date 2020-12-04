@@ -1,5 +1,6 @@
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Tuple
 
@@ -10,7 +11,20 @@ from cme import utils
 logger = logging.getLogger("cme.extraction")
 
 
-def _build_mdb(person_str):
+keywords = {
+    "Beifall", "Zuruf", "Heiterkeit", "Zurufe", "Lachen",
+    "Wiederspruch", "Widerspruch", "Gegenrufe", "Buhrufe", "Pfiffe", "Gegenruf"}
+
+
+@dataclass
+class MalformedMDB:
+    person_str: str
+    forename: str
+    surname: str
+    memberships: List
+
+
+def _build_mdb(person_str, add_debug_obj):
     # the following lines are a workaround for the somehow not working
     # optional matching group for the Abg. string. If someone finds a way to
     # get this optional matching group working feel free to remove also
@@ -19,6 +33,9 @@ def _build_mdb(person_str):
     if cut_idx >= 0:
         cut_idx = person_str.find(" ", cut_idx)
         person_str = person_str[cut_idx:].strip()
+
+    person_str = person_str.replace("(", "[")
+    person_str = person_str.replace(")", "]")
 
     num_opening_brackets = person_str.count("[")
     num_closing_brackets = person_str.count("]")
@@ -66,10 +83,69 @@ def _build_mdb(person_str):
     if faction:
         membership = [(datetime.min, None, faction)]
 
+    # merging of name parts which are separated with a space between a dash and the two words
+    tmp_np = name_parts.copy()
+    tmp_np.reverse()
+    name_parts.clear()
+    while tmp_np:
+        part = tmp_np.pop()
+
+        if not tmp_np:
+            name_parts.append(part)
+            break
+
+        elif part.endswith("-"):
+            name_parts.append(part + tmp_np.pop())
+        elif tmp_np[0].startswith("-"):
+            name_parts.append(part + tmp_np.pop())
+        else:
+            name_parts.append(part)
+
+    # splitting of names with german noble titles
+    if "von" in name_parts:
+        noble_title_idx = name_parts.index("von")
+
+        if noble_title_idx > 0:
+            noble_titles = {"Freiherr"}
+            if name_parts[noble_title_idx - 1] in noble_titles:
+                noble_title_idx -= 1
+
+        forename = " ".join(name_parts[:noble_title_idx])
+        surname = " ".join(name_parts[noble_title_idx:])
+    else:
+        # fallthrough in which case the last word is assumed to be the surname
+        forename = " ".join(name_parts[:-1])
+        surname = name_parts[-1]
+
+    # detection of malformed extractions
+    malformed = not forename
+    malformed = malformed or not surname
+    extended_keywords = keywords.copy()
+    extended_keywords.update(["am", "um", "ne", "wo", "Wo"])  # todo: add more
+    for k in extended_keywords:
+        malformed = malformed or k in name_parts
+        if malformed:
+            break
+
+    if malformed:
+        return MalformedMDB(
+            person_str,
+            forename,
+            surname,
+            membership)
+
+    debug_info = None
+    if add_debug_obj:
+        debug_info = {
+            "constructed_from_text": True,
+            "creation_person_str": person_str
+        }
+
     return MDB.find_in_storage(
-        forename=" ".join(name_parts[:-1]),
-        surname=name_parts[-1],
-        memberships=membership)
+        forename=forename,
+        surname=surname,
+        memberships=membership,
+        debug_info=debug_info)
 
 
 def _extract_comment_interactions(
@@ -114,17 +190,17 @@ def _extract_comment_interactions(
                 if pr:
                     for curr_pr in pr:
                         if isinstance(curr_pr, str):
-                            curr_pr = _build_mdb(curr_pr)
+                            curr_pr = _build_mdb(curr_pr, add_debug_obj)
                         elif isinstance(curr_pr, Faction):
                             curr_pr = curr_pr
 
                         return [(
-                            _build_mdb(phs[0]),
+                            _build_mdb(phs[0], add_debug_obj),
                             curr_pr,
                             pm)]
                 else:
                     return [(
-                        _build_mdb(phs[0]),
+                        _build_mdb(phs[0], add_debug_obj),
                         None,
                         pm)]
             else:
@@ -138,10 +214,6 @@ def _extract_comment_interactions(
                 return [(f, None, pm) for f in pfs]
         # converting non verbal messages like laughing
         else:
-            keywords = {
-                "Beifall", "Zuruf", "Heiterkeit", "Zurufe", "Lachen",
-                "Wiederspruch", "Widerspruch", "Gegenrufe", "Buhrufe", "Pfiffe"}
-
             words = text_part.split(" ")
 
             if len(words) == 0:
@@ -176,7 +248,7 @@ def _extract_comment_interactions(
                             "This is currently not supported".format(phs, text_part))
 
                     found_senders.append((
-                        _build_mdb(phs[0]),
+                        _build_mdb(phs[0], add_debug_obj),
                         None,
                         text_part))
 
@@ -216,6 +288,27 @@ def _extract_comment_interactions(
             result = _extract(part)
             if result:
                 for sender, receiver, message in result:
+
+                    # check for malformed senders or receivers
+                    sender_malformed = isinstance(sender, MalformedMDB)
+                    receiver_malformed = isinstance(receiver, MalformedMDB)
+                    if sender_malformed or receiver_malformed:
+                        if sender_malformed and receiver_malformed:
+                            logger.error(
+                                f"Found message \"{message}\" with a broken "
+                                f"sender \"{sender}\" and receiver "
+                                f"\"{receiver}\". skipping it...")
+                        if sender_malformed:
+                            logger.error(
+                                f"Found message \"{message}\" with a broken "
+                                f"sender \"{sender}\". skipping it...")
+                        else:
+                            logger.error(
+                                f"Found message \"{message}\" with a broken "
+                                f"receiver \"{receiver}\". skipping it...")
+
+                        continue
+
                     if not receiver:
                         receiver = curr_cand.speaker
 
@@ -242,77 +335,6 @@ def _extract_comment_interactions(
                                    "dropping it now...".format(part))
 
     return reformatted_interactions
-
-
-def _fix_sender_and_receivers(interactions):
-    next_f_id = 0
-    r_factions_map = dict()
-    next_p_id = 0
-    r_person_map = dict()
-
-    # todo: dont create id's, use id's from faction and MDB collection
-
-    def _lookup(obj):
-        if isinstance(obj, str):
-            if obj in r_factions_map:
-                return True, r_factions_map[obj]
-        elif isinstance(obj, dict):
-            hashable_obj = tuple(sorted(obj.items()))
-            if hashable_obj in r_person_map:
-                return True, r_person_map[hashable_obj]
-
-        return False, None
-
-    def _fix_either(obj):
-        nonlocal next_f_id
-        nonlocal next_p_id
-
-        already_mapped, found_id = _lookup(obj)
-        if not already_mapped:
-            if isinstance(obj, str):
-                # Vizepräsiden instead of Vizepräsident is used here as there
-                # are random spaces after this in the source files
-                if obj.startswith("Vizepräsiden") or obj.startswith("Präsident"):
-                    found_id = _fix_either(
-                        _build_mdb(obj[obj.find(" "):].rstrip(":")))
-                else:
-                    found_id = "F{}".format(next_f_id)
-                    next_f_id += 1
-                    r_factions_map[obj] = found_id
-            elif isinstance(obj, dict):
-                found_id = "P{}".format(next_p_id)
-                next_p_id += 1
-                r_person_map[tuple(sorted(obj.items()))] = found_id
-
-        if not found_id:
-            logger.warning("received a unhandled {} as a receiver or sender to fix!".format(obj))
-
-        return found_id
-
-    fixed_interactions = list()
-
-    for inter in interactions:
-        fixed_interactions.append(inter.copy())
-        fixed_interactions[-1]["sender"] = _fix_either(inter["sender"])
-        fixed_interactions[-1]["receiver"] = _fix_either(inter["receiver"])
-
-    def _reverse_dict(dict_obj):
-        def _rebuild_dict(potential_dict):
-            if isinstance(potential_dict, tuple):
-                return {k: v for k, v in potential_dict}
-            return potential_dict
-
-        return {v: _rebuild_dict(k) for k, v in dict_obj.items()}
-
-    faction_map = _reverse_dict(r_factions_map)
-    speaker_map = _reverse_dict(r_person_map)
-
-    for speaker in speaker_map.values():
-        faction_str = speaker.get("faction")
-        if faction_str:
-            speaker["faction"] = _fix_either(faction_str)
-
-    return fixed_interactions, faction_map, speaker_map
 
 
 def extract_communication_model(

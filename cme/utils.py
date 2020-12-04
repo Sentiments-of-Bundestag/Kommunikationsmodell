@@ -135,7 +135,7 @@ def find_non_ascii_chars(obj: Any) -> Set[str]:
 def split_name_str(person_str) -> Tuple[str, str, str, str]:
     name_parts = person_str.split(" ")
 
-    known_roles = ["Präsident", "Vizepräsident"]
+    known_roles = ["Präsident", "Vizepräsident", "Alterspräsident"]
     found_role = ""
     for role in known_roles:
         if name_parts[0].startswith(role):
@@ -152,7 +152,18 @@ def split_name_str(person_str) -> Tuple[str, str, str, str]:
     # remove eventual break ups of the roles for example in "Vizepräsident in"
     name_parts = [p for p in name_parts if not p.islower()]
 
-    return found_role, found_titles, " ".join(name_parts[:-1]), name_parts[-1]
+    # removal of potential empty spaces
+    name_parts = [p for p in name_parts if p]
+
+    forename = " ".join(name_parts[:-1])
+    surname = name_parts[-1]
+
+    if not forename:
+        logging.error(f"splitted a person string ({person_str}) without a forename!")
+    if not surname:
+        logging.error(f"splitted a person string ({person_str}) without a surname!")
+
+    return found_role, found_titles, forename, surname
 
 
 def run_async(coro):

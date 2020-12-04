@@ -123,6 +123,14 @@ next_mdb_id = 0
 
 # member of german bundestag
 class MDB(BaseModel):
+
+    # class vars
+    _storage_type = "mongodb"
+    _mdb_runtime_storage: Dict[str, Dict] = dict()
+    _mdb_runtime_storage_mdb_number_index: Dict[str, str] = dict()
+    _mdb_runtime_storage_name_index: Dict[Tuple[str, str], str] = dict()
+
+    # instance vars
     speaker_id: str
     mdb_number: Optional[str]
     forename: str
@@ -132,6 +140,15 @@ class MDB(BaseModel):
     birthplace: Optional[str]
     title: Optional[str]
     job_title: Optional[str]
+    debug_info: Optional[Dict]
+
+    @classmethod
+    def set_storage_mode(cls, storage_type: str = None):
+        if not storage_type:
+            storage_type = "mongodb"
+
+        storage_type = storage_type.lower()
+        cls._storage_type = storage_type
 
     @property
     def id(self) -> str:
@@ -147,20 +164,55 @@ class MDB(BaseModel):
             birthday: Optional[datetime] = None,
             birthplace: Optional[str] = None,
             title: Optional[str] = None,
-            job_title: Optional[str] = None) -> "MDB":
+            job_title: Optional[str] = None,
+            debug_info: Optional[Dict] = None) -> "MDB":
+
+        def _find_one(mdb_number = None, forename = None, surname = None) -> Optional[Dict]:
+            if cls._storage_type == "mongodb":
+                if mdb_number:
+                    return database.find_one("mdb", {"mdb_number": mdb_number})
+                elif forename or surname:
+                    return database.find_one("mdb", {"forename": forename, "surname": surname})
+            elif cls._storage_type == "runtime":
+                if mdb_number:
+                    mdb_idx = cls._mdb_runtime_storage_mdb_number_index.get(mdb_number)
+                    return cls._mdb_runtime_storage.get(mdb_idx)
+                elif forename or surname:
+                    mdb_idx = cls._mdb_runtime_storage_name_index.get((forename, surname))
+                    return cls._mdb_runtime_storage.get(mdb_idx)
+            else:
+                raise RuntimeError("not supported storage_type!")
+
+        def _update_one(key, value):
+            if cls._storage_type == "mongodb":
+                database.update_one("mdb", {"speaker_id": key}, value)
+            elif cls._storage_type == "runtime":
+                mdb_dict = cls._mdb_runtime_storage.get(key, dict())
+                mdb_dict.update(value)
+
+                cls._mdb_runtime_storage[key] = mdb_dict
+
+                name_tuple = (mdb_dict["forename"], mdb_dict["surname"])
+                cls._mdb_runtime_storage_name_index[name_tuple] = key
+
+                mdb_number = mdb_dict.get("mdb_number")
+                if mdb_number:
+                    cls._mdb_runtime_storage_mdb_number_index[mdb_number] = key
+            else:
+                raise RuntimeError("not supported storage_type!")
 
         mdb = None
         if mdb_number:
-            mdb = database.find_one("mdb", {"mdb_number": mdb_number})
+            mdb = _find_one(mdb_number=mdb_number)
 
         if not mdb:
-            mdb = database.find_one("mdb", {"forename": forename, "surname": surname})
+            mdb = _find_one(forename=forename, surname=surname)
 
             # if found through name and mdb_number given -> add to document
             if mdb and "mdb_number" not in mdb and mdb_number:
                 logging.info(f"Adding mdb_number '{mdb_number}' to mdb '{mdb['speaker_id']}'")
                 mdb['mdb_number'] = mdb_number
-                database.update_one("mdb", {"speaker_id": mdb["speaker_id"]}, {'mdb_number': mdb_number})
+                _update_one(mdb["speaker_id"], {'mdb_number': mdb_number})
         if mdb:
             return MDB(**mdb)
 
@@ -177,10 +229,12 @@ class MDB(BaseModel):
                 birthday=birthday,
                 birthplace=birthplace,
                 title=title,
-                job_title=job_title)
+                job_title=job_title,
+                debug_info=debug_info)
 
-            database.update_one("mdb", {"speaker_id": mdb_id},
-                                json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)))
+            _update_one(
+                mdb_id,
+                json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)))
 
         return mdb
 
