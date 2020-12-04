@@ -17,10 +17,11 @@ def evaluate_newest_sessions(id_list: List[str]):
     for id in id_list:
         transcripts = []
         current_session = utils.get_crawled_session(id)
-        file_content = read_transcripts_json(current_session)
+        if not current_session:
+            logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
+            return
 
-        # todo: when real DB access happens, we should probably only retrieve one session per request?
-        # then every transcript should be one session and should be stored in DB, (for loop should not be necessary anymore)
+        file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
             transcript = Transcript.from_interactions(
                 metadata=metadata,
@@ -108,30 +109,24 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 
 
 def read_transcripts_json(
-        content: Dict) \
+        transcript: Dict) \
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
     converted = list()
 
-    for period in content.get("wahlperiode", list()):
-        for transcript in period.get("protokolls", list()):
-            # why do we even get a list of objects instead of a dict (╯°□°)╯︵ ┻━┻
-            speaker_map = {r["id"]: r for r in transcript["redner_liste"]}
-            speaker_map = _convert_speaker(speaker_map)
-
-            session_elements = transcript["sitzungsverlauf"]
-
-            metadata = SessionMetadata(
-                session_no=int(transcript["id"]),
-                legislative_period=int(period["id"]),
-                start=build_datetime(
-                    transcript["sitzung_datum"],
-                    session_elements["sitzung_start"]),
-                end=build_datetime(
-                    transcript["sitzung_datum"],
-                    session_elements["sitzung_ende"]))
-
-            candidates = _get_candidates(session_elements["ablaufspunkte"], speaker_map)
-            converted.append((metadata, candidates))
+    speaker_map = {r["id"]: r for r in transcript["rednerListe"]}
+    speaker_map = _convert_speaker(speaker_map)
+    session_elements = transcript["sitzungsverlauf"]
+    metadata = SessionMetadata(
+        session_no=int(transcript["_id"]),
+        legislative_period=int(transcript["id"][:2]),
+        start=build_datetime(
+            transcript["sitzungDatum"],
+            session_elements["sitzungStart"]),
+        end=build_datetime(
+            transcript["sitzungDatum"],
+            session_elements["sitzungEnde"]))
+    candidates = _get_candidates(session_elements["ablaufspunkte"], speaker_map)
+    converted.append((metadata, candidates))
 
     return converted
 

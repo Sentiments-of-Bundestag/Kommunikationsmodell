@@ -6,13 +6,12 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
 db = None
+crawl_db = None
 
 DB_USER = os.environ.get("DB_MONGO_STD_USERNAME")
 DB_PASSWORD = os.environ.get("DB_MONGO_STD_PASSWORD")
 DB_HOST_PORT = os.environ.get("DB_MONGO_HOST_PORT")
 DB_DB = "cme_data"
-
-crawl_db = None
 
 
 def get_db():
@@ -41,7 +40,6 @@ def get_crawler_db():
     pw = os.environ.get("CRAWL_DB_PASSWORD")
     crawl_ip = os.environ.get("CRAWL_DB_IP")
     db_name = "crawler_db"
-    db_collection = "Protokoll"
 
     if not user or not pw or not crawl_ip:
         logging.error(

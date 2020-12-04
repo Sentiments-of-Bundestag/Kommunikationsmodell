@@ -170,21 +170,18 @@ def get_session_id_safe(legislative_period: str, session_no: str) -> str:
 
 
 def get_crawled_session(session_id: str) -> dict:
-    # todo: testing is needed to access DB from group 1, probably need to specify query better to receive single session
-    # db & collection name is still unknown
+    global crawler_db
+    if not crawler_db:
+        crawler_db = database.get_crawler_db()
 
-    crawled_db = database.get_crawler_db()
-
-    if not crawled_db:
-        logging.warning("External DB access was not successful. Using test data...")
+    if not crawler_db:
+        logging.warning("External DB access was not successful. Aborting...")
         time.sleep(4)
-        with open("./resources/plenarprotokolle/group_1/19_181_187.json", "r") as read_file:
-            session = json.load(read_file)
-        return session
+        return {}
 
-    collection_name = "session"
+    collection_name = "protokoll"
     query = {'_id': session_id}
-    session = run_async(crawled_db[collection_name].find_one(query))
+    session = run_async(crawler_db[collection_name].find_one(query))
 
     if session:
         logging.info(f"Successful retrieved session '{session_id}' from external DB")
