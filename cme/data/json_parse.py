@@ -2,12 +2,21 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 from cme import utils, database
 from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction, Transcript
 from cme.extraction import extract_communication_model
 from cme.utils import build_datetime
+
+
+# todo: remove me plx
+class SafeEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+
+        return json.JSONEncoder.default(self, obj)
 
 
 def evaluate_newest_sessions(id_list: List[str]):
@@ -20,6 +29,9 @@ def evaluate_newest_sessions(id_list: List[str]):
         if not current_session:
             logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
             return
+
+        # todo: remove me plx
+        print(json.dumps(transcripts, cls=SafeEncoder))
 
         file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
