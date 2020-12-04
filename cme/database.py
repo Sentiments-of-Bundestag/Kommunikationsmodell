@@ -53,7 +53,8 @@ def get_crawler_db():
 
         # test connection
         collections = crawl_db.list_collection_names()
-        print(collections)
+        if not collections:
+            return None
 
         logging.info(f"Connection to external DB was successful.")
         return crawl_db

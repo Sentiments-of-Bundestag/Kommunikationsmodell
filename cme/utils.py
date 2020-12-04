@@ -178,8 +178,9 @@ def get_crawled_session(session_id: str) -> dict:
         return {}
 
     collection_name = "protokoll"
-    query = {'_id': session_id}
-    session = run_async(crawler_db[collection_name].find_one(query))
+    # todo: cast check
+    query = {'_id': int(session_id)}
+    session = crawler_db[collection_name].find_one(query)
 
     if session:
         logging.info(f"Successful retrieved session '{session_id}' from external DB")
