@@ -3,6 +3,7 @@
 resources/plenarprotokolle/group_1/*
 resources/plenarprotokolle/all/
 !resources/plenarprotokolle/group_1/19_181_187.json
+!resources/plenarprotokolle/group_1/19192.json
 resources/plenarprotokolle/open_data/*
 !resources/plenarprotokolle/open_data/19180-data.xml
 
