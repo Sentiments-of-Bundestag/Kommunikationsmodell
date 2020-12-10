@@ -92,7 +92,7 @@ def _generic_get_db(
     if use_default_auth_db:
         auth_db = "admin"
 
-    return _open_db_connection(username, password, address, db_name, db_name)
+    return _open_db_connection(username, password, address, db_name, auth_db)
 
 
 def get_cme_db() -> MongoDatabase:
