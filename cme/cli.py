@@ -115,8 +115,10 @@ def server_mode(args):
         "port": args.port,
         "log_level": args.log_level,
         "reload": args.reload,
-        "env_file": args.env_file
     }
+
+    if args.env_file:
+        uvicorn_kwargs["env_file"] = args.env_file
 
     uvicorn.run("cme.api.api:app", **uvicorn_kwargs)
 
@@ -158,11 +160,15 @@ def main():
     args = parser.parse_args()
 
     if not args.env_file.exists() or not args.env_file.is_file():
-        parser.error(
+        logger.warning(
             "You are missing the --env-file argument and your current "
-            "working directory does not contain a .env file")
+            "working directory does not contain a .env file. Continuing "
+            "without it but this requires that you set the environment "
+            "variables yourself!")
+        args.env_file = None
 
-    load_dotenv(args.env_file)
+    if args.env_file:
+        load_dotenv(args.env_file)
 
     if len(vars(args)) == 0:
         parser.error("You must choose one of the subcommands!")

@@ -9,11 +9,17 @@ services:
     container_name: "cme_api"
     environment:
       - "LANDSCAPE=${LANDSCAPE}"
-      - "DB_MONGO_STD_PASSWORD=${DB_MONGO_STD_PASSWORD}"
-      - "DB_MONGO_STD_USERNAME=${DB_MONGO_STD_USERNAME}"
-      - "CME_ADMIN_PASSWORD=${CME_ADMIN_PASSWORD}"
-      - "SENTIMENT_CLIENT_PASSWORD=${SENTIMENT_CLIENT_PASSWORD}"
-      - "CRAWLER_CLIENT_PASSWORD=${CRAWLER_CLIENT_PASSWORD}"
+      - "CME_DB_USERNAME"
+      - "CME_DB_PASSWORD"
+      - "CME_DB_NAME"
+      - "CME_DB_ADDRESS"
+      - "CRAWLER_DB_USERNAME"
+      - "CRAWLER_DB_PASSWORD"
+      - "CRAWLER_DB_NAME"
+      - "CRAWLER_DB_ADDRESS"
+      - "CME_ADMIN_PASSWORD"
+      - "SENTIMENT_CLIENT_PASSWORD"
+      - "CRAWLER_CLIENT_PASSWORD"
     volumes:
       - ./resources/plenarprotokolle/open_data:/plenarprotokolle/
     ports:
@@ -30,11 +36,12 @@ services:
       - configdb-volume:/data/configdb
       - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
     environment:
-      - "MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}"
-      - "MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}"
-      - "DB_MONGO_STD_PASSWORD=${DB_MONGO_STD_PASSWORD}"
-      - "DB_MONGO_STD_USERNAME=${DB_MONGO_STD_USERNAME}"
+      - "MONGO_INITDB_ROOT_USERNAME"
+      - "MONGO_INITDB_ROOT_PASSWORD"
       - "MONGO_INITDB_DATABASE=admin"
+      - "CME_DB_USERNAME"
+      - "CME_DB_PASSWORD"
+      - "CME_DB_NAME"
 volumes:
   db-volume: { }
   configdb-volume: { }
