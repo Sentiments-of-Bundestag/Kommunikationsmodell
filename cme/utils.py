@@ -5,9 +5,10 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Dict, Tuple, Any, Set
+from typing import Dict, Tuple, Any, Set, IO
 
 import requests
+from bson import ObjectId
 from fastapi.security import HTTPBasicCredentials
 
 from cme import database
@@ -15,6 +16,28 @@ from cme.api import error
 
 IGNORED_KEYWORDS = ["Zwischenfrage", "Gegenfrage", "Unruhe", "Glocke der Präsidentin",
                     "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne", "Heiterkeit", "Nachfrage"]
+
+
+class SafeJsonEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+
+        return json.JSONEncoder.default(self, obj)
+
+
+def safe_json_dump(obj: Any, fp: IO[str], **kwargs):
+    kwargs["cls"] = SafeJsonEncoder
+    kwargs["ensure_ascii"] = False
+    json.dump(obj, fp, **kwargs)
+
+
+def safe_json_dumps(obj: Any, **kwargs) -> str:
+    kwargs["cls"] = SafeJsonEncoder
+    kwargs["ensure_ascii"] = False
+    return json.dumps(obj, **kwargs)
 
 
 def reverse_dict(dict_obj: Dict) -> Dict:

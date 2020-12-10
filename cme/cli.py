@@ -1,15 +1,20 @@
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 
 import uvicorn
 
 import csv
+
+from dotenv import load_dotenv
+
 from cme import database, utils
 from cme.data import read_transcript_xml_file, read_transcripts_json_file, import_clients
 from cme.domain import Transcript, CommunicationModel, MDB
 from cme.extraction import extract_communication_model
+from cme.utils import safe_json_dumps, safe_json_dump
 
 logger = logging.getLogger()
 logger.name = "cme"
@@ -17,7 +22,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(name)s [%(levelname).1s]: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S')
-database.get_db()
 
 
 def manual_mode(args):
@@ -74,34 +78,35 @@ def manual_mode(args):
             with open(out_file, "w", encoding="utf-8") as o:
                 o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
 
-    # todo: rschlett debug stuff
-    # mdb_storage = MDB._mdb_runtime_storage
-    # with open("all_mdbs.json", "w") as f:
-    #     json.dump(mdb_storage, f, ensure_ascii=False, indent=4)
-    #     print(f"found {len(mdb_storage)} mdb entries")
-    # strange_chars = utils.find_non_ascii_chars(mdb_storage)
-    # for char in strange_chars:
-    #     print(
-    #         "repr:", char,
-    #         "unicode escape:", char.encode("raw_unicode_escape"))
 
-    if args.export_mdbs:
-        filename = "mdbs_debug.csv"
-        mdbs = database.find_many("mdb", {})
-        mdbs = [(v['forename'], v['surname']) for v in mdbs]
-        # mdbs = [(utils.cleanup_str(v['forename']), utils.cleanup_str(v['surname'])) for v in mdbs]
-        from cme.utils import find_non_ascii_chars
-        strange_chars = find_non_ascii_chars(mdbs)
-        for char in strange_chars:
-            print(
-                "repr:", char,
-                "unicode escape:", char.encode("raw_unicode_escape"))
+def dump_mode(args):
+    if args.database == "crawler":
+        db = database.get_crawler_db()
+    else:
+        db = database.get_cme_db()
 
-        with open(filename, "w", encoding="utf-8") as o:
-            w = csv.writer(o, quotechar="\"", quoting=csv.QUOTE_ALL)
-            w.writerow(["forename", "surname"])
-            w.writerows(mdbs)
-            logger.info(f"{filename} exported")
+    if args.list_collections:
+        print(db.list_collection_names())
+    elif args.list_collection_fields:
+        print(list(db[args.collection].find_one().keys()))
+    elif args.collection:
+        if args.index:
+            obj = db[args.collection].find_one({args.index_field: args.index})
+        else:
+            obj = list()
+            for doc in db[args.collection].find():
+                obj.append(doc)
+
+        if args.output_file:
+            with args.output_file.open("w") as f:
+                safe_json_dump(obj, f, indent=4)
+        else:
+            print(safe_json_dumps(obj, indent=4))
+    else:
+        logger.info(
+            "Dump mode did nothing. This is probably not what you wanted. "
+            "Please check your command line arguments and rerun the tool "
+            "after doing so.")
 
 
 def server_mode(args):
@@ -109,7 +114,8 @@ def server_mode(args):
         "host": args.host,
         "port": args.port,
         "log_level": args.log_level,
-        "reload": args.reload
+        "reload": args.reload,
+        "env_file": args.env_file
     }
 
     uvicorn.run("cme.api.api:app", **uvicorn_kwargs)
@@ -117,19 +123,31 @@ def server_mode(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+
+    parser.add_argument("--env-file", type=Path, default=Path.cwd() / ".env")
     parser.add_argument(
         "--log_level",
         default="info",
         type=str,
         choices=["info", "debug", "warning"])
 
+    subparsers = parser.add_subparsers()
+
     manual_parser = subparsers.add_parser("manual", aliases=["m"])
     manual_parser.add_argument("files", nargs="+", type=Path)
     manual_parser.add_argument("--dry-run", default=False, action="store_true")
-    manual_parser.add_argument("--export-mdbs", default=False, action="store_true")
     manual_parser.add_argument("--add-debug-objects", default=False, action="store_true")
     manual_parser.set_defaults(func=manual_mode)
+
+    dump_parser = subparsers.add_parser("dump", aliases=["d"])
+    dump_parser.add_argument("--database", type=str, default="cme", choices=["cme", "crawler"])
+    dump_parser.add_argument("--index-field", type=str, default="_id")
+    dump_parser.add_argument("--index", type=str, default="")
+    dump_parser.add_argument("--list-collections", default=False, action="store_true")
+    dump_parser.add_argument("--list-collection-fields", default=False, action="store_true")
+    dump_parser.add_argument("--collection", type=str)
+    dump_parser.add_argument("--output-file", type=Path)
+    dump_parser.set_defaults(func=dump_mode)
 
     server_parser = subparsers.add_parser("server", aliases=["s"])
     server_parser.add_argument("--host", default="127.0.0.1", type=str)
@@ -138,6 +156,13 @@ def main():
     server_parser.set_defaults(func=server_mode)
 
     args = parser.parse_args()
+
+    if not args.env_file.exists() or not args.env_file.is_file():
+        parser.error(
+            "You are missing the --env-file argument and your current "
+            "working directory does not contain a .env file")
+
+    load_dotenv(args.env_file)
 
     if len(vars(args)) == 0:
         parser.error("You must choose one of the subcommands!")

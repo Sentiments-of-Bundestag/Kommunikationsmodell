@@ -4,11 +4,11 @@ set -e
 mongo <<EOF
 use cme_data
 db.createUser({
-  user:  '$DB_MONGO_STD_USERNAME',
-  pwd: '$DB_MONGO_STD_PASSWORD',
+  user:  '$CME_DB_USERNAME',
+  pwd: '$CME_DB_PASSWORD',
   roles: [{
     role: 'readWrite',
-    db: 'cme_data'
+    db: '$CME_DB_NAME'
   }]
 })
 EOF

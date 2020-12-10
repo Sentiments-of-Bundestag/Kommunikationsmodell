@@ -1,80 +1,127 @@
 import logging
 import os
 from datetime import datetime
+from typing import Tuple
 
 from pymongo import MongoClient
+from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ServerSelectionTimeoutError
 
-db = None
-crawl_db = None
 
-DB_USER = os.environ.get("DB_MONGO_STD_USERNAME")
-DB_PASSWORD = os.environ.get("DB_MONGO_STD_PASSWORD")
-DB_HOST_PORT = os.environ.get("DB_MONGO_HOST_PORT")
-DB_DB = "cme_data"
+logger = logging.getLogger("cme.database")
+
+__cme_client = None
+__cme_db = None
+__crawler_client = None
+__crawler_db = None
 
 
-def get_db():
-    global db
-    if db:
-        return db
+def _open_db_connection(
+        user: str,
+        password: str,
+        address: str,
+        db_name: str,
+        auth_db_name: str = None,
+        test_connection: bool = True) \
+        -> Tuple[MongoClient, MongoDatabase]:
 
-    # create DB connection string with or without user authentication
-    if DB_USER:
-        db_url = f"mongodb://{DB_USER}:{DB_PASSWORD}@{DB_HOST_PORT}/?authSource={DB_DB}"
+    logger.info(f"trying to connect to mongo db {address}")
+
+    if not auth_db_name:
+        auth_db_name = "admin"
+
+    if user:
+        db_url = f"mongodb://{user}:{password}@{address}/?authSource={auth_db_name}"
     else:
-        db_url = f"mongodb://{DB_HOST_PORT}/{DB_DB}"
+        db_url = f"mongodb://{address}/{db_name}"
 
-    client = MongoClient(db_url, tz_aware=True)
-    db = client[DB_DB]
-    return db
+    client = MongoClient(db_url, tz_aware=True, serverSelectionTimeoutMS=10000)
+    db = client[db_name]
+
+    if test_connection:
+        try:
+            collections = db.list_collection_names()
+            logger.info(f"Connection to external DB was successful.")
+        except ServerSelectionTimeoutError as err:
+            logging.error(f"Timeout while connecting to external DB, error: {err}")
+            raise RuntimeError(
+                f"Connecting to db {address} failed! Please check the "
+                f"used credentials.")
+
+    return client, db
 
 
-def get_crawler_db():
-    global crawl_db
-    if crawl_db:
-        return crawl_db
+def _get_credentials(
+        username_key,
+        password_key,
+        address_key,
+        db_name_key) \
+        -> Tuple[str, str, str, str]:
 
-    # check for env vars
-    user = os.environ.get("CRAWL_DB_USER")
-    pw = os.environ.get("CRAWL_DB_PASSWORD")
-    crawl_ip = os.environ.get("CRAWL_DB_IP")
-    db_name = "crawler_db"
+    username = os.getenv(username_key)
+    password = os.getenv(password_key)
+    address = os.getenv(address_key)
+    db_name = os.getenv(db_name_key)
 
-    if not user or not pw or not crawl_ip:
-        logging.error(
-            "Please provide CRAWL_DB_USER, CRAWL_DB_PASSWORD and CRAWL_DB_IP as env var's to access crawler DB.")
-        return None
+    if not username or not password or not address or not db_name:
+        raise RuntimeError(
+            f"Credential extraction failed due to missing at least one of the "
+            f"following environment variables: {username_key}, "
+            f"{password_key}, {address_key}, {db_name_key}")
 
-    db_url = f"mongodb://{user}:{pw}@{crawl_ip}/{db_name}?authSource=admin"
-    try:
-        client = MongoClient(db_url, tz_aware=True, serverSelectionTimeoutMS=10000)
-        crawl_db = client[db_name]
+    return username, password, address, db_name
 
-        # test connection
-        collections = crawl_db.list_collection_names()
-        if not collections:
-            return None
 
-        logging.info(f"Connection to external DB was successful.")
-        return crawl_db
-    except ServerSelectionTimeoutError as err:
-        logging.error(f"Timeout while connecting to external DB, error: {err}")
-    return None
+def _generic_get_db(prefix: str) -> Tuple[MongoClient, MongoDatabase]:
+    credentials = _get_credentials(
+        f"{prefix}_DB_USERNAME",
+        f"{prefix}_DB_PASSWORD",
+        f"{prefix}_DB_ADDRESS",
+        f"{prefix}_DB_NAME")
+
+    username = credentials[0]
+    password = credentials[1]
+    address = credentials[2]
+    db_name = credentials[3]
+
+    return _open_db_connection(username, password, address, db_name, db_name)
+
+
+def get_cme_db() -> MongoDatabase:
+    global __cme_db
+    global __cme_client
+    if __cme_db:
+        return __cme_db
+
+    __cme_client, __cme_db = _generic_get_db("CME")
+    return __cme_db
+
+
+def get_crawler_db() -> MongoDatabase:
+    global __crawler_db
+    global __crawler_client
+    if __crawler_db:
+        return __crawler_db
+
+    __crawler_client, __crawler_db = _generic_get_db("CRAWLER")
+    return __crawler_db
 
 
 def find_one(collection_name: str, query: dict, exclude: dict = None) -> dict:
+    db = get_cme_db()
     if exclude:
         return db[collection_name].find_one(query, exclude)
     return db[collection_name].find_one(query)
 
 
 def find_all_ids(collection_name: str, attribute_name: str):
+    db = get_cme_db()
     result = db[collection_name].find({}, {attribute_name: 1})
     return [session['session_id'] for session in result]
 
 
 def find_many(collection_name: str, query: dict, exclude: dict = None) -> list:
+    db = get_cme_db()
     if exclude:
         cursor = db[collection_name].find(query, exclude)
     else:
@@ -86,11 +133,13 @@ def find_many(collection_name: str, query: dict, exclude: dict = None) -> list:
 
 
 def insert_many(collection_name: str, query: list) -> None:
+    db = get_cme_db()
     collection = db[collection_name]
     collection.insert_many(query)
 
 
 def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
+    db = get_cme_db()
     if on_insert is None:
         on_insert = {}
     now = datetime.utcnow().isoformat()

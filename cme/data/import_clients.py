@@ -29,7 +29,7 @@ def main():
     clients_file = open(clients_filename)
     clients = json.load(clients_file)
 
-    db = database.get_db()
+    db = database.get_cme_db()
     clients_collection = db["client"]
 
     print(f"INFO - Importing {len(clients)} clients for {os.environ.get('LANDSCAPE')} landscape to DB {db}")

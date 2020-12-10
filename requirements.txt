@@ -7,3 +7,5 @@ motor==2.3.0
 jwcrypto==0.8
 ujson==4.0.1
 requests
+python-dotenv
+pymongo

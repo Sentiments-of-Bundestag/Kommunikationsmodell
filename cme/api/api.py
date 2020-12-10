@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 #
 # Communication Model Extractor - CME API
-
 import time
 
 import uvicorn
@@ -12,12 +11,10 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
 
-from cme import database
 from cme.api import api_session, api_doc, api_mdb, api_faction
 
 BASE_PREFIX = "cme"
 
-db = database.get_db()
 app = FastAPI()
 
 app.include_router(api_session.router, prefix=f"/{BASE_PREFIX}/data")

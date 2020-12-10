@@ -10,13 +10,9 @@ from cme.extraction import extract_communication_model
 from cme.utils import build_datetime
 
 
-# todo: remove me plx
-class SafeEncoder(json.JSONEncoder):
-    def default(self, obj: Any) -> Any:
-        if isinstance(obj, datetime):
-            return obj.isoformat()
+logger = logging.getLogger("cme.json")
 
-        return json.JSONEncoder.default(self, obj)
+
 
 
 def evaluate_newest_sessions(id_list: List[str]):
@@ -75,9 +71,15 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
             if "redeInhalt" not in sp:
                 continue
 
-            speaker = speaker_map[sp["rednerId"]]
+            speaker = speaker_map.get(sp["rednerId"])
 
-            for sp_part in sp["redeTeil"]:
+            if not speaker:
+                logger.warning(
+                    f"Speak with id {sp['rednerId']} is a active speaker in "
+                    f"the json file but doesn't exist in the speaker list!")
+                continue
+
+            for sp_part in sp["redeInhalt"]:
                 part_type = sp_part["typ"]
                 if last_paragraph is not None and part_type == "Paragraf":
                     candidates.append(InteractionCandidate(
