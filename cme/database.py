@@ -72,7 +72,11 @@ def _get_credentials(
     return username, password, address, db_name
 
 
-def _generic_get_db(prefix: str) -> Tuple[MongoClient, MongoDatabase]:
+def _generic_get_db(
+        prefix: str,
+        use_default_auth_db: bool = True) \
+        -> Tuple[MongoClient, MongoDatabase]:
+
     credentials = _get_credentials(
         f"{prefix}_DB_USERNAME",
         f"{prefix}_DB_PASSWORD",
@@ -84,6 +88,10 @@ def _generic_get_db(prefix: str) -> Tuple[MongoClient, MongoDatabase]:
     address = credentials[2]
     db_name = credentials[3]
 
+    auth_db = db_name
+    if use_default_auth_db:
+        auth_db = "admin"
+
     return _open_db_connection(username, password, address, db_name, db_name)
 
 
@@ -93,7 +101,7 @@ def get_cme_db() -> MongoDatabase:
     if __cme_db:
         return __cme_db
 
-    __cme_client, __cme_db = _generic_get_db("CME")
+    __cme_client, __cme_db = _generic_get_db("CME", False)
     return __cme_db
 
 
