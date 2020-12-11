@@ -78,14 +78,14 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
                 if last_paragraph is not None and part_type.lower() == "paragraf":
                     candidates.append(InteractionCandidate(
                         speaker=speaker,
-                        paragraph=last_paragraph,
+                        paragraph=utils.cleanup_str(last_paragraph),
                         comment=None))
                     last_paragraph = sp_part["text"]
                 elif part_type.lower() == "kommentar":
                     candidates.append(InteractionCandidate(
                         speaker=speaker,
-                        paragraph=last_paragraph,
-                        comment=sp_part["text"]))
+                        paragraph=utils.cleanup_str(last_paragraph),
+                        comment=utils.cleanup_str(sp_part["text"])))
                     last_paragraph = None
                 else:
                     last_paragraph = sp_part["text"]
@@ -112,13 +112,13 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 
         conv_map[v["_id"]] = MDB.find_in_storage(
             mdb_number=v["_id"],
-            forename=v["vorname"],
-            surname=v["nachname"],
+            forename=utils.cleanup_str(v["vorname"]),
+            surname=utils.cleanup_str(v["nachname"]),
             memberships=_fix_factions(v.get("fraktions", list())),
             birthday=birthday,
-            birthplace=v.get("geburtsort"),
-            title=v.get("title"),
-            job_title=v.get("beruf", ""))
+            birthplace=utils.cleanup_str(v.get("geburtsort")),
+            title=utils.cleanup_str(v.get("title")),
+            job_title=utils.cleanup_str(v.get("beruf", "")))
 
     return conv_map
 

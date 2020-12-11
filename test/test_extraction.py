@@ -5,6 +5,9 @@ from cme.domain import InteractionCandidate, MDB, Faction
 from cme.extraction import extract_communication_model
 
 
+MDB.set_storage_mode("runtime")
+
+
 def _build_candidate(comment: str) -> InteractionCandidate:
     return InteractionCandidate(
         speaker=MDB.find_in_storage(
@@ -74,7 +77,7 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual(interaction_0.sender, MDB.find_in_storage(forename="Carsten", surname="Schneider", memberships=[(datetime.min, None, Faction.SPD)]))
         self.assertEqual(interaction_0.message, 'Was für ein Blödsinn!')
         self.assertEqual(interaction_1.sender, Faction.DIE_GRÜNEN)
-        self.assertEqual(interaction_1.message, 'Zuruf vom BÜNDNIS90/DIE GRÜNEN: Vielleicht mal lesen! Lesen bildet!')
+        self.assertEqual(interaction_1.message, 'Vielleicht mal lesen! Lesen bildet!')
 
 
     def test_extract_funny_sample1(self):
@@ -130,4 +133,3 @@ class TestExtraction(unittest.TestCase):
 
         self.assertEqual(interaction_0.sender, MDB.find_in_storage(forename="Manfred", surname="Grund", memberships=[(datetime.min, None, Faction.CDU_AND_CSU)]))
         self.assertEqual(interaction_0.message, 'Heiterkeit des Abg. Manfred Grund [CDU/CSU]')
-

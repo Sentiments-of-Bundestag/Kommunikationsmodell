@@ -80,6 +80,9 @@ def build_isoformat_time_str(date_str: str, time_str: str, date_order: str = "DM
 
 
 def cleanup_str(str_to_fix):
+    if not str_to_fix:
+        return str_to_fix
+
     def _replace(value, chars, replacement) -> str:
         for char in chars:
             value = value.replace(char, replacement)
