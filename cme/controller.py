@@ -13,9 +13,8 @@ def update_mdbs_from_crawler(file: Path):
         else:
             persons = database.get_crawler_db()["person"].find({})
     except:
-        print("Can't connect to remote crawler db. If you're developing locally you must specify a equivalent "
-              "json with --file")
-
+        raise ConnectionError("Can't connect to remote crawler db. If you're developing locally you must specify a equivalent "
+              "json with --file as fallback.")
 
     for p in persons:
         for timeframe in p["fraktionen"]:
