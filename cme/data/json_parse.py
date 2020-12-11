@@ -55,7 +55,7 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
     candidates = list()
 
     for tp in topic_points:
-        if tp["ablaufTyp"] not in ["SITZUNGSBEGINN", "TAGESORDNUNGSPUNKT"]:
+        if tp["ablaufTyp"].lower() not in ["sitzungsbeginn", "tagesordnungspunkt"]:
             continue
 
         last_paragraph = None
