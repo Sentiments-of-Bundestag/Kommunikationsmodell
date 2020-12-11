@@ -75,13 +75,13 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
 
             for sp_part in sp["redeInhalt"]:
                 part_type = sp_part["typ"]
-                if last_paragraph is not None and part_type == "Paragraf":
+                if last_paragraph is not None and part_type.lower() == "paragraf":
                     candidates.append(InteractionCandidate(
                         speaker=speaker,
                         paragraph=last_paragraph,
                         comment=None))
                     last_paragraph = sp_part["text"]
-                elif part_type == "Kommentar":
+                elif part_type.lower() == "kommentar":
                     candidates.append(InteractionCandidate(
                         speaker=speaker,
                         paragraph=last_paragraph,
