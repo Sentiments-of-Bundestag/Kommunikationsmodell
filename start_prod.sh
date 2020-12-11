@@ -12,5 +12,5 @@ echo ""
 
 echo "starting services"
 echo "----------------------------------------"
-docker-compose -f ./docker-compose.prod.yml --env-file ./.env.prod up --build
+docker-compose -f ./docker-compose.prod.yml --env-file ./.env.prod up --build --detach
 echo ""
