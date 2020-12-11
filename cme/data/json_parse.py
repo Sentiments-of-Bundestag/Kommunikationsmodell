@@ -33,13 +33,13 @@ def evaluate_newest_sessions(id_list: List[str]):
             transcripts.append(transcript)
 
             # write to DB
-            if len(transcript.interactions) > 0:
+            if len(transcript.interactions) == 0:
+                logging.warning(f"Could not find any interactions in session with id '{id}'")
+            else:
                 session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
-                logging.info(f"Inserting evaluated session '{session_id}' into DB")
+                logging.info(f"Inserting evaluated session '{session_id}' with {len(transcript.interactions)} interactions into DB")
 
-                # todo: change janky conversion
                 transcript_dict = transcript.dict()
-                # transcript_dict = json.loads(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
                 transcript_dict['session_id'] = session_id
                 database.update_one("session", {"session_id": session_id}, transcript_dict)
 
