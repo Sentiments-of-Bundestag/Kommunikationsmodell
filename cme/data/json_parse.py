@@ -16,7 +16,8 @@ logger = logging.getLogger("cme.json")
 def evaluate_newest_sessions(id_list: List[str]):
     # todo: should this not be moved into extraction.py? as this is only to
     #  read the raw data and not to interpret it?
-    # wasn't this the spot (extraction.py) were I first put it? :D (oskar)
+    # wasn't this the spot (extraction.py) were I first put it? :D (oskar <3)
+
     for id in id_list:
         transcripts = []
         current_session = utils.get_crawled_session(id)

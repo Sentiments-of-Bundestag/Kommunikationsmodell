@@ -25,28 +25,46 @@ class Faction(Enum):
         return obj
 
     CDU_AND_CSU = (["CDU/CSU", "CDU", "CSU", "Christlich Demokratische Union",
-                    "Christlich-Soziale Union", "Union", "Schwarz"])
+                    "Christlich-Soziale Union", "Union", "Schwarz",
+                    "Fraktion der Christlich Demokratischen Union/Christlich - Sozialen Union",
+                    "Fraktion der CDU/CSU (Gast)"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
-            "Sozialdemokrat", "Rot"])
-    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot"])
+            "Sozialdemokrat", "Rot", "Fraktion der Sozialdemokratischen Partei Deutschlands",
+            "Fraktion der SPD (Gast)"])
+    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot", "Fraktion DIE LINKE."])
     DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
-                   "Die Grünen", "Bündnis 90", "Grün"])
-    AFD = (["AfD", "Alternative für Duetschland", "Blau"])
+                   "Die Grünen", "Bündnis 90", "Grün", "Fraktion Bündnis 90/Die Grünen", "Gruppe Bündnis 90/Die Grünen",
+                   "Fraktion Die Grünen", "Fraktion Die Grünen/Bündnis 90"])
+    AFD = (["AfD", "Alternative für Deutschland", "Blau"])
     FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
-            "Liberale", "Gelb"])
+            "Liberale", "Gelb", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
     NONE = (["Fraktionslos", "fraktionslos"])
+    LEGACY = ([""])
 
     # historical factions
-    #GB_AND_BHE = (["GB/BHE", "BHE", "Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten"])
-    #BP = (["BP", "Bayernpartei"])
-    #DP = (["DP", "Deutsche Partei"])
-    #NDP = (["NDP", "Nationaldemokratische Partei",
-    #        "National-Demokratische Partei"])
-    #KPD = (["KPD", "Kommunistische Partei"])
-    #WAV = (["WAV", "Wirtschaftliche Aufbau-Vereinigung"])
-    #DZP = (["DZP", "Deutsche Zentrumspartei"])
-    #DRP = (["DRP", "Deutsche Reichs-Partei", "Deutsche Rechtspartei"])
-    #DKP = (["DKP", "Deutsche Konservative Partei"])
+    # GB_AND_BHE = (["GB/BHE", "BHE", "Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten",
+    #                "Fraktion Deutscher Gemeinschaftsblock der Heimatvertriebenen und Entrechteten",
+    #                "Fraktion Gesamtdeutscher Block / Block der Heimatvertriebenen und Entrechteten"])
+    # BP = (["BP", "Bayernpartei", "Fraktion Deutsche Partei Bayern", "Fraktion Deutsche Partei/Deutsche Partei Bayern",
+    #        "Fraktion Bayernpartei"])
+    # DP = (["DP", "Deutsche Partei", "Fraktion Deutsche Partei", "Fraktion DP/DPB (Gast)", "Gruppe Deutsche Partei"])
+    # NDP = (["NDP", "Nationaldemokratische Partei",
+    #         "National-Demokratische Partei"])
+    # KPD = (["KPD", "Kommunistische Partei", "Fraktion der Kommunistischen Partei Deutschlands"])
+    # WAV = (["WAV", "Wirtschaftliche Aufbau-Vereinigung"])
+    # DZP = (["DZP", "Deutsche Zentrumspartei", "Fraktion Deutsche Zentrums-Partei"])
+    # DRP = (["DRP", "Deutsche Reichs-Partei", "Deutsche Rechtspartei", "Fraktion Deutsche Reichspartei/Nationale Rechte",
+    #         "Fraktion Deutsche Reichspartei"])
+    # DKP = (["DKP", "Deutsche Konservative Partei"])
+
+    # Unassigned Factions
+    # "Fraktion der Partei des Demokratischen Sozialismus" "Gruppe der Partei des Demokratischen Sozialismus" "Gruppe der Partei des Demokratischen Sozialismus/Linke Liste"
+    # "Fraktion Deutsche Partei/Freie Volkspartei", "Fraktion Freie Volkspartei"
+    # Gruppe Kraft/Oberländer
+    # Fraktion Wirtschaftliche Aufbauvereinigung
+    # Fraktion Demokratische Arbeitsgemeinschaft
+    # Fraktion Föderalistische Union
+    # Fraktion WAV (Gast)
 
     @property
     def possible_names(self) -> List[str]:
@@ -67,10 +85,9 @@ class Faction(Enum):
                 return var
 
         logger.warning(
-            "received invalid value \"{}\" as faction name! returning "
-            "Faction.NONE...".format(name))
+            "received invalid value \"{}\" as faction name! returning Faction.LEGACY...".format(name))
 
-        return Faction.NONE
+        return Faction.LEGACY
 
     @classmethod
     def from_bundestag_od_id(cls, bf_id: str) -> "Faction":
@@ -123,7 +140,6 @@ next_mdb_id = 0
 
 # member of german bundestag
 class MDB(BaseModel):
-
     # class vars
     _storage_type = "mongodb"
     _mdb_runtime_storage: Dict[str, Dict] = dict()
@@ -167,7 +183,7 @@ class MDB(BaseModel):
             job_title: Optional[str] = None,
             debug_info: Optional[Dict] = None) -> "MDB":
 
-        def _find_one(mdb_number = None, forename = None, surname = None) -> Optional[Dict]:
+        def _find_one(mdb_number=None, forename=None, surname=None) -> Optional[Dict]:
             if cls._storage_type == "mongodb":
                 if mdb_number:
                     return database.find_one("mdb", {"mdb_number": mdb_number})

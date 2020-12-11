@@ -15,6 +15,7 @@ from cme.data import read_transcript_xml_file, read_transcripts_json_file, impor
 from cme.domain import Transcript, CommunicationModel, MDB
 from cme.extraction import extract_communication_model
 from cme.utils import safe_json_dumps, safe_json_dump
+from cme.controller import update_mdbs_from_crawler, init_mdb_collection
 
 logger = logging.getLogger()
 logger.name = "cme"
@@ -109,6 +110,10 @@ def dump_mode(args):
             "after doing so.")
 
 
+def initialize(args):
+    init_mdb_collection(args.file)
+
+
 def server_mode(args):
     uvicorn_kwargs = {
         "host": args.host,
@@ -156,6 +161,10 @@ def main():
     server_parser.add_argument("--port", default="9001", type=int)
     server_parser.add_argument("--reload", default=False, action="store_true")
     server_parser.set_defaults(func=server_mode)
+
+    init_parser = subparsers.add_parser("init", aliases=["i"], help="Generates a new mdb collection locally from the crawler db (default) or file (see --file)")
+    init_parser.add_argument("--file", type=Path, help="Path of a json you want to use instead of the remote crawler")
+    init_parser.set_defaults(func=initialize)
 
     args = parser.parse_args()
 

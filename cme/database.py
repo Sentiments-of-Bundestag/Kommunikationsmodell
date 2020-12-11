@@ -7,7 +7,6 @@ from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ServerSelectionTimeoutError
 
-
 logger = logging.getLogger("cme.database")
 
 __cme_client = None
@@ -24,7 +23,6 @@ def _open_db_connection(
         auth_db_name: str = None,
         test_connection: bool = True) \
         -> Tuple[MongoClient, MongoDatabase]:
-
     logger.info(f"trying to connect to mongo db {address}")
 
     if not auth_db_name:
@@ -57,7 +55,6 @@ def _get_credentials(
         address_key,
         db_name_key) \
         -> Tuple[str, str, str, str]:
-
     username = os.getenv(username_key)
     password = os.getenv(password_key)
     address = os.getenv(address_key)
@@ -76,7 +73,6 @@ def _generic_get_db(
         prefix: str,
         use_default_auth_db: bool = True) \
         -> Tuple[MongoClient, MongoDatabase]:
-
     credentials = _get_credentials(
         f"{prefix}_DB_USERNAME",
         f"{prefix}_DB_PASSWORD",
@@ -157,3 +153,9 @@ def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
     if result.modified_count == 1:
         return True
     return False
+
+
+def delete_many(collection_name: str, query: dict):
+    db = get_cme_db()
+    collection = db[collection_name]
+    collection.delete_many(query)
