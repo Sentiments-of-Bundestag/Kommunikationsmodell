@@ -12,7 +12,9 @@ def update_mdbs_from_crawler(file: Path):
             persons = json.loads(open(file.absolute(), "r").read())
         else:
             persons = database.get_crawler_db()["person"].find({})
-    except error:
+    except:
+        print("Can't connect to remote crawler db. If you're developing locally you must specify a equivalent "
+              "json with --file")
 
 
     for p in persons:
