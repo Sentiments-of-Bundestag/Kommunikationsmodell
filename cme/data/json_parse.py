@@ -128,6 +128,10 @@ def read_transcripts_json(
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
 
     def _merge_datetimes(datepart, timepart) -> datetime:
+        if isinstance(datepart, datetime):
+            datepart = datepart.isoformat()
+        if isinstance(timepart, datetime):
+            timepart = timepart.isoformat()
         date_str, _ = datepart.split("T")
         _, time_str = timepart.split("T")
         return datetime.fromisoformat(f"{date_str}T{time_str}")
