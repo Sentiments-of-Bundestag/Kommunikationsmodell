@@ -13,8 +13,6 @@ from cme.utils import build_datetime
 logger = logging.getLogger("cme.json")
 
 
-
-
 def evaluate_newest_sessions(id_list: List[str]):
     # todo: should this not be moved into extraction.py? as this is only to
     #  read the raw data and not to interpret it?
@@ -25,11 +23,6 @@ def evaluate_newest_sessions(id_list: List[str]):
         if not current_session:
             logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
             return
-
-        # todo: remove me plx
-        logging.error("-" * 80)
-        with open("/bla.json", "w") as f:
-            json.dump(current_session, f, cls=SafeEncoder)
 
         file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
@@ -54,6 +47,7 @@ def evaluate_newest_sessions(id_list: List[str]):
                 # with open(f"transcript_{session_id}.json", "w", encoding="utf-8") as o:
                 #    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
 
+    # todo: notify sentiment group about updated id's
         # cm = CommunicationModel(transcripts=transcripts)
 
 
