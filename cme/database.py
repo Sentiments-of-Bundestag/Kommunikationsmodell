@@ -60,12 +60,6 @@ def _get_credentials(
     address = os.getenv(address_key)
     db_name = os.getenv(db_name_key)
 
-    if not username or not password or not address or not db_name:
-        raise RuntimeError(
-            f"Credential extraction failed due to missing at least one of the "
-            f"following environment variables: {username_key}, "
-            f"{password_key}, {address_key}, {db_name_key}")
-
     return username, password, address, db_name
 
 
