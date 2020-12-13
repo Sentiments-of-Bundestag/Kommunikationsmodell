@@ -18,7 +18,7 @@ def update_mdbs_from_crawler(file: Path):
 
     for p in persons:
         for timeframe in p["fraktionen"]:
-            timeframe["id"] = Faction.from_name(timeframe["beschreibung"]).value
+            timeframe["id"] = Faction.from_mdb_description(timeframe["beschreibung"]).value
 
         mdb_number = p["_id"]
         p["_id"] = str(uuid.uuid4())
