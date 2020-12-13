@@ -39,7 +39,7 @@ class Faction(Enum):
     FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
             "Liberale", "Gelb", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
     NONE = (["Fraktionslos", "fraktionslos"])
-    LEGACY = ([""])
+    LEGACY = (["Legacy"])
 
     # historical factions
     # GB_AND_BHE = (["GB/BHE", "BHE", "Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten",
@@ -171,6 +171,20 @@ class MDB(BaseModel):
         return self.speaker_id
 
     @classmethod
+    def find_known_mdbs(cls) -> List["MDB"]:
+        def _find_all() -> Optional[List[Dict]]:
+            if cls._storage_type == "mongodb":
+                return database.find_many("mdb")
+            elif cls._storage_type == "runtime":
+                return list(cls._mdb_runtime_storage.values())
+            else:
+                raise RuntimeError("unsupported storage type!")
+
+        mdbs = _find_all()
+        logger.debug(f"retrieved {len(mdbs)} MDB entities from {cls._storage_type}")
+        return mdbs
+
+    @classmethod
     def find_in_storage(
             cls,
             forename: str,
@@ -197,7 +211,7 @@ class MDB(BaseModel):
                     mdb_idx = cls._mdb_runtime_storage_name_index.get((forename, surname))
                     return cls._mdb_runtime_storage.get(mdb_idx)
             else:
-                raise RuntimeError("not supported storage_type!")
+                raise RuntimeError("unsupported storage_type!")
 
         def _update_one(key, value):
             if cls._storage_type == "mongodb":

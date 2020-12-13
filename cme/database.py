@@ -124,12 +124,14 @@ def find_all_ids(collection_name: str, attribute_name: str):
     return [session['session_id'] for session in result]
 
 
-def find_many(collection_name: str, query: dict, exclude: dict = None) -> list:
+def find_many(collection_name: str = None, query: dict = None, exclude: dict = None) -> list:
     db = get_cme_db()
     if exclude:
         cursor = db[collection_name].find(query, exclude)
-    else:
+    elif query:
         cursor = db[collection_name].find(query)
+    else:
+        cursor = db[collection_name].find()
     list = []
     for item in cursor:
         list.append(item)

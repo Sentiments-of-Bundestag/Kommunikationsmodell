@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 
 def main():
-    file = Path("/home/rschlett/software_projects/Kommunikationsmodell/18245.xml")
+    file = Path("./18245.xml")
     with file.open("rb") as f:
         soup = BeautifulSoup(f, "xml")
 
