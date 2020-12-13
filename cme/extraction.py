@@ -101,12 +101,15 @@ def _build_mdb(person_str, add_debug_obj):
         else:
             name_parts.append(part)
 
-    # splitting of names with german noble titles
-    if "von" in name_parts:
-        noble_title_idx = name_parts.index("von")
+    # splitting of names with german noble titles & prefix
+    # todo ralph: fix prefix removal q:D
+    prefixes = ['von der', 'von und zu', 'von', 'de', 'zu', 'van', 'vom', 'zu']
+    for prefix in prefixes:
+        if prefix in " ".join(name_parts):
+            noble_title_idx = name_parts.index("von")
 
         if noble_title_idx > 0:
-            noble_titles = {"Freiherr"}
+            noble_titles = {"Freiherr", "Baron", "Fürst", "Graf", "Frhr.", "Prinz", "Gräfin", "Prinz zu"}
             if name_parts[noble_title_idx - 1] in noble_titles:
                 noble_title_idx -= 1
 
