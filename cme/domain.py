@@ -15,7 +15,11 @@ class Faction(Enum):
     """Enum representing a Faction in the german bundestag. The values can be
     constructed by name or bundestag opendata faction ids."""
 
-    def __new__(cls, possible_names: List[str]):
+    def __new__(cls, possible_names: List[str] = None):
+        """Builds a new Faction enum value with an automatic value field. If
+        possible_names is None a text search is no longer possible and is what
+        you want if the faction is considered as legacy."""
+
         f_id = "F{:03d}".format(len(cls))
 
         obj = object.__new__(cls)
@@ -25,21 +29,16 @@ class Faction(Enum):
         return obj
 
     CDU_AND_CSU = (["CDU/CSU", "CDU", "CSU", "Christlich Demokratische Union",
-                    "Christlich-Soziale Union", "Union", "Schwarz",
-                    "Fraktion der Christlich Demokratischen Union/Christlich - Sozialen Union",
-                    "Fraktion der CDU/CSU (Gast)"])
+                    "Christlich-Soziale Union", "Union", "Schwarz"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
-            "Sozialdemokrat", "Rot", "Fraktion der Sozialdemokratischen Partei Deutschlands",
-            "Fraktion der SPD (Gast)"])
+            "Sozialdemokrat", "Rot"])
     DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot", "Fraktion DIE LINKE."])
     DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
-                   "Die Grünen", "Bündnis 90", "Grün", "Fraktion Bündnis 90/Die Grünen", "Gruppe Bündnis 90/Die Grünen",
-                   "Fraktion Die Grünen", "Fraktion Die Grünen/Bündnis 90"])
+                   "Die Grünen", "Bündnis 90", "Grün"])
     AFD = (["AfD", "Alternative für Deutschland", "Blau"])
-    FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
-            "Liberale", "Gelb", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
+    FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten", "Liberale", "Gelb"])
     NONE = (["Fraktionslos", "fraktionslos"])
-    LEGACY = ([""])
+    LEGACY = ()
 
     # historical factions
     # GB_AND_BHE = (["GB/BHE", "BHE", "Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten",
@@ -90,22 +89,51 @@ class Faction(Enum):
         return Faction.LEGACY
 
     @classmethod
-    def from_bundestag_od_id(cls, bf_id: str) -> "Faction":
+    def from_mdb_description(cls, mdb_description: str) -> "Faction":
         """Utility function to return the correct Enum Object based on the
-        id used by the bundestag opendata xml format. If the given id is not
-        valid a KeyError is thrown."""
+        full length faction description text as it is used in the MDB master
+        data published by the Bundestag."""
 
         mapping = {
-            "1": Faction.CDU_AND_CSU,
-            "2": Faction.SPD,
-            "3": Faction.DIE_LINKE,
-            "4": Faction.DIE_GRÜNEN,
-            "5": Faction.AFD,
-            "6": Faction.FDP,
-            "7": Faction.NONE,
+            "Alternative für Deutschland": Faction.AFD,
+            "Fraktion der Christlich Demokratischen Union/Christlich - Sozialen Union": Faction.CDU_AND_CSU,
+            "Fraktion der Freien Demokratischen Partei": Faction.FDP,
+            "Fraktion der Sozialdemokratischen Partei Deutschlands": Faction.SPD,
+            "Fraktion DIE LINKE.": Faction.DIE_LINKE,
+            "Fraktion Bündnis 90/Die Grünen": Faction.DIE_GRÜNEN,
+            "Fraktion Die Grünen": Faction.DIE_GRÜNEN,
+            "Fraktion Die Grünen/Bündnis 90": Faction.DIE_GRÜNEN,
+
+            # legacy stuff
+            "Fraktion Deutsche Zentrums-Partei": Faction.LEGACY,
+            "Fraktion Deutsche Partei Bayern": Faction.LEGACY,
+            "Fraktion Deutsche Reichspartei": Faction.LEGACY,
+            "Fraktion Deutsche Partei": Faction.LEGACY,
+            "Fraktion Wirtschaftliche Aufbauvereinigung": Faction.LEGACY,
+            "Fraktion der Kommunistischen Partei Deutschlands": Faction.LEGACY,
+            "Fraktion Deutscher Gemeinschaftsblock der Heimatvertriebenen und Entrechteten": Faction.LEGACY,
+            "Fraktion Bayernpartei": Faction.LEGACY,
+            "Fraktion Demokratische Arbeitsgemeinschaft": Faction.LEGACY,
+            "Fraktion Gesamtdeutscher Block / Block der Heimatvertriebenen und Entrechteten": Faction.LEGACY,
+            "Fraktion der Partei des Demokratischen Sozialismus": Faction.LEGACY,
+            "Fraktion Deutsche Partei/Freie Volkspartei": Faction.LEGACY,
+            "Fraktion Deutsche Partei/Deutsche Partei Bayern": Faction.LEGACY,
+            "Fraktion Freie Volkspartei": Faction.LEGACY,
+            "Fraktion Föderalistische Union": Faction.LEGACY,
+            "Fraktion Deutsche Reichspartei/Nationale Rechte": Faction.LEGACY,
+
+            "Fraktionslos": Faction.NONE
         }
 
-        return mapping[bf_id]
+        faction = mapping.get(mdb_description)
+
+        if not faction:
+            logger.warning(
+                f"from_mdb_description got mdb_description {mdb_description} "
+                f"which is not mapped! Falling back to Faction.NONE")
+            faction = Faction.NONE
+
+        return faction
 
     @classmethod
     def in_text(cls, text: str) -> List["Faction"]:
@@ -232,7 +260,7 @@ class MDB(BaseModel):
             if mdb and "mdb_number" not in mdb and mdb_number:
                 logging.debug(f"Adding mdb_number '{mdb_number}' to mdb '{mdb['speaker_id']}'")
                 mdb['mdb_number'] = mdb_number
-                _update_one(mdb["speaker_id"], {'mdb_number': mdb_number})
+                _update_one(mdb["speaker_id"], {"mdb_number": mdb_number})
         if mdb:
             return MDB(**mdb)
 

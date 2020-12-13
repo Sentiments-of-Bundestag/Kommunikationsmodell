@@ -26,7 +26,7 @@ def update_mdbs_from_crawler(file: Path):
             else:
                 austrittsdatum = None
 
-            membership = (datetime.strptime(timeframe['eintrittsDatum'], '%Y-%m-%dT%H:%M:%S%z'), austrittsdatum, Faction.from_name(timeframe["beschreibung"]))
+            membership = (datetime.strptime(timeframe['eintrittsDatum'], '%Y-%m-%dT%H:%M:%S%z'), austrittsdatum, Faction.from_mdb_description(timeframe["beschreibung"]))
             memberships.append(membership)
 
         # will auto create MDB if not yet existent
