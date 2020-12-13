@@ -141,7 +141,7 @@ def _build_mdb(person_str, add_debug_obj):
             "creation_person_str": person_str
         }
 
-    return MDB.find_in_storage(
+    return MDB.find_and_add_in_storage(
         forename=forename,
         surname=surname,
         memberships=membership,

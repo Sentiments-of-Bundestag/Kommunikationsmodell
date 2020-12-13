@@ -101,7 +101,7 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
             fixed_factions.append((
                 build_datetime(f["eintrittsdatum"]),
                 build_datetime(f["austrittsdatum"]),
-                Faction.from_bundestag_od_id(f["id"])))
+                Faction.from_name(f["beschreibung"]).value))
         return fixed_factions
 
     conv_map = dict()
@@ -111,11 +111,11 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
         if isinstance(v, str):
             birthday = datetime.fromisoformat(birthday)
 
-        conv_map[v["_id"]] = MDB.find_in_storage(
+        conv_map[v["_id"]] = MDB.find_and_add_in_storage(
             mdb_number=v["_id"],
             forename=utils.cleanup_str(v["vorname"]),
             surname=utils.cleanup_str(v["nachname"]),
-            memberships=_fix_factions(v.get("fraktions", list())),
+            memberships=_fix_factions(v.get("fraktionen", list())),
             birthday=birthday,
             birthplace=utils.cleanup_str(v.get("geburtsort")),
             title=utils.cleanup_str(v.get("title")),

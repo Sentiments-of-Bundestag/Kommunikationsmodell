@@ -171,7 +171,7 @@ class MDB(BaseModel):
         return self.speaker_id
 
     @classmethod
-    def find_in_storage(
+    def find_and_add_in_storage(
             cls,
             forename: str,
             surname: str,
@@ -181,7 +181,8 @@ class MDB(BaseModel):
             birthplace: Optional[str] = None,
             title: Optional[str] = None,
             job_title: Optional[str] = None,
-            debug_info: Optional[Dict] = None) -> "MDB":
+            debug_info: Optional[Dict] = None,
+            initial: bool = False) -> "MDB":
 
         def _find_one(mdb_number=None, forename=None, surname=None) -> Optional[Dict]:
             if cls._storage_type == "mongodb":
@@ -221,12 +222,15 @@ class MDB(BaseModel):
         if mdb_number:
             mdb = _find_one(mdb_number=mdb_number)
 
-        if not mdb:
+        if not initial and not mdb:
+            # todo: find many
             mdb = _find_one(forename=forename, surname=surname)
+
+            # todo: if find multiple mdb by fore & surname
 
             # if found through name and mdb_number given -> add to document
             if mdb and "mdb_number" not in mdb and mdb_number:
-                logging.info(f"Adding mdb_number '{mdb_number}' to mdb '{mdb['speaker_id']}'")
+                logging.debug(f"Adding mdb_number '{mdb_number}' to mdb '{mdb['speaker_id']}'")
                 mdb['mdb_number'] = mdb_number
                 _update_one(mdb["speaker_id"], {'mdb_number': mdb_number})
         if mdb:

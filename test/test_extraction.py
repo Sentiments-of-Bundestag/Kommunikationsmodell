@@ -10,7 +10,7 @@ MDB.set_storage_mode("runtime")
 
 def _build_candidate(comment: str) -> InteractionCandidate:
     return InteractionCandidate(
-        speaker=MDB.find_in_storage(
+        speaker=MDB.find_and_add_in_storage(
             forename="Likey",
             surname="McUnittest",
             memberships=[(datetime.min, None, Faction.NONE)]),
@@ -41,7 +41,7 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual(interaction_3.sender, Faction.DIE_GRÜNEN)
         self.assertEqual(interaction_3.message, 'Beifall bei der FDP sowie bei Abgeordneten der CDU/CSU, der SPD und '
                                                 'des BÜNDNISSES 90/DIE GRÜNEN')
-        self.assertEqual(interaction_4.sender, MDB.find_in_storage(forename="Eberhardt Alexander", surname="Gauland", memberships=[(datetime.min, None, Faction.AFD)]))
+        self.assertEqual(interaction_4.sender, MDB.find_and_add_in_storage(forename="Eberhardt Alexander", surname="Gauland", memberships=[(datetime.min, None, Faction.AFD)]))
         self.assertEqual(interaction_4.message, 'Ha, ha, ha!')
 
     def test_extract_sample2(self):
@@ -64,7 +64,7 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual(interaction_3.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
         self.assertEqual(interaction_4.sender, Faction.DIE_GRÜNEN)
         self.assertEqual(interaction_4.message, 'Beifall bei der CDU/CSU, der SPD, der FDP, der LINKEN und dem BÜNDNIS 90/DIE GRÜNEN')
-        self.assertEqual(interaction_5.sender, MDB.find_in_storage(forename="Armin-Paulus", surname="Hampel", memberships=[(datetime.min, None, Faction.AFD)]))
+        self.assertEqual(interaction_5.sender, MDB.find_and_add_in_storage(forename="Armin-Paulus", surname="Hampel", memberships=[(datetime.min, None, Faction.AFD)]))
         self.assertEqual(interaction_5.message, 'Zuruf des Abg. Armin-Paulus Hampel [AfD]')
 
     def test_extract_sample3(self):
@@ -74,7 +74,7 @@ class TestExtraction(unittest.TestCase):
         interaction_0 = cm3[0]
         interaction_1 = cm3[1]
 
-        self.assertEqual(interaction_0.sender, MDB.find_in_storage(forename="Carsten", surname="Schneider", memberships=[(datetime.min, None, Faction.SPD)]))
+        self.assertEqual(interaction_0.sender, MDB.find_and_add_in_storage(forename="Carsten", surname="Schneider", memberships=[(datetime.min, None, Faction.SPD)]))
         self.assertEqual(interaction_0.message, 'Was für ein Blödsinn!')
         self.assertEqual(interaction_1.sender, Faction.DIE_GRÜNEN)
         self.assertEqual(interaction_1.message, 'Vielleicht mal lesen! Lesen bildet!')
@@ -110,7 +110,7 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual(interaction_0.message, 'Beifall bei der SPD sowie bei Abgeordneten der LINKEN')
         self.assertEqual(interaction_1.sender, Faction.DIE_LINKE)
         self.assertEqual(interaction_1.message, 'Beifall bei der SPD sowie bei Abgeordneten der LINKEN')
-        self.assertEqual(interaction_2.sender, MDB.find_in_storage(forename="Matthias W.", surname="Birkwald", memberships=[(datetime.min, None, Faction.DIE_LINKE)]))
+        self.assertEqual(interaction_2.sender, MDB.find_and_add_in_storage(forename="Matthias W.", surname="Birkwald", memberships=[(datetime.min, None, Faction.DIE_LINKE)]))
         self.assertEqual(interaction_2.message, 'Ich mich auch!')
 
     def test_extract_funny_sample_3(self):
@@ -122,7 +122,7 @@ class TestExtraction(unittest.TestCase):
 
         self.assertEqual(interaction_0.sender, Faction.CDU_AND_CSU)
         self.assertEqual(interaction_0.message, 'Heiterkeit und Beifall bei der CDU/CSU sowie des Abg. Jens Beeck [FDP]')
-        self.assertEqual(interaction_1.sender, MDB.find_in_storage(forename="Jens", surname="Beeck", memberships=[(datetime.min, None, Faction.FDP)]))
+        self.assertEqual(interaction_1.sender, MDB.find_and_add_in_storage(forename="Jens", surname="Beeck", memberships=[(datetime.min, None, Faction.FDP)]))
         self.assertEqual(interaction_1.message, 'Heiterkeit und Beifall bei der CDU/CSU sowie des Abg. Jens Beeck [FDP]')
 
     def test_extract_funny_sample_4(self):
@@ -131,5 +131,5 @@ class TestExtraction(unittest.TestCase):
         cm = extract_communication_model([_build_candidate(comment)])
         interaction_0 = cm[0]
 
-        self.assertEqual(interaction_0.sender, MDB.find_in_storage(forename="Manfred", surname="Grund", memberships=[(datetime.min, None, Faction.CDU_AND_CSU)]))
+        self.assertEqual(interaction_0.sender, MDB.find_and_add_in_storage(forename="Manfred", surname="Grund", memberships=[(datetime.min, None, Faction.CDU_AND_CSU)]))
         self.assertEqual(interaction_0.message, 'Heiterkeit des Abg. Manfred Grund [CDU/CSU]')

@@ -1,9 +1,11 @@
 import json
 import uuid
 from pathlib import Path
+from datetime import datetime
 
 from cme import database
-from cme.domain import Faction
+
+from cme.domain import Faction, MDB
 
 
 def update_mdbs_from_crawler(file: Path):
@@ -17,14 +19,20 @@ def update_mdbs_from_crawler(file: Path):
               "json with --file as fallback.")
 
     for p in persons:
+        memberships = []
         for timeframe in p["fraktionen"]:
-            timeframe["id"] = Faction.from_name(timeframe["beschreibung"]).value
+            if 'austrittsDatum' in timeframe:
+                austrittsdatum = datetime.strptime(timeframe['austrittsDatum'], '%Y-%m-%dT%H:%M:%S%z')
+            else:
+                austrittsdatum = None
 
-        mdb_number = p["_id"]
-        p["_id"] = str(uuid.uuid4())
-        p["mdb_number"] = mdb_number
+            membership = (datetime.strptime(timeframe['eintrittsDatum'], '%Y-%m-%dT%H:%M:%S%z'), austrittsdatum, Faction.from_name(timeframe["beschreibung"]))
+            memberships.append(membership)
 
-        database.update_one("mdb", {"mdb_number": mdb_number}, p)
+        # will auto create MDB if not yet existent
+        MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'], datetime.strptime(p['geburtsdatum'], '%Y-%m-%dT%H:%M:%S%z'), p['geburtsort'], p['titel'], p['beruf'], initial=True)
+
+        #database.update_one("mdb", {"mdb_number": mdb_number}, p)
 
 
 def init_mdb_collection(file: Path):

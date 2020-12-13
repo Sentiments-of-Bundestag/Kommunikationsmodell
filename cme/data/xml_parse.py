@@ -90,7 +90,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                             continue
 
                         speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                            else MDB.find_in_storage(**curr_speaker)
+                            else MDB.find_and_add_in_storage(**curr_speaker)
 
                         pms.append(InteractionCandidate(
                             speaker=speaker,
@@ -117,7 +117,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     continue
 
                 speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                    else MDB.find_in_storage(**curr_speaker)
+                    else MDB.find_and_add_in_storage(**curr_speaker)
 
                 pms.append(InteractionCandidate(
                     speaker=speaker,
@@ -136,7 +136,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                 return pms
 
             speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                else MDB.find_in_storage(**curr_speaker)
+                else MDB.find_and_add_in_storage(**curr_speaker)
 
             pms.append(InteractionCandidate(
                 speaker=speaker,
