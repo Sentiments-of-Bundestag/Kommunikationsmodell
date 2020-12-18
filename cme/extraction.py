@@ -296,28 +296,28 @@ def reformat_interaction(sender, receiver, message):
     return Interaction(**inter)
 
 
-def retrieve_paragraph_keymap():
-    paragraph_keymap = {}
+def retrieve_paragraph_keymap(add_debug_obj:bool = False):
     # fetch person list from mdb database
     person_keymap = {}
     mdb_list = MDB.find_known_mdbs()
     if len(mdb_list) > 0:
         for mdb in mdb_list:
             keyword = mdb['surname'].lower()
-            # TODO disambiguation improvement. for now, we opt to look for
+            # TODO disambiguation improvement
+            # for now, we opt to look for
             # mdb references only by their surname, as we have no method
             # to contextualize role- or forename references enough to tell
             # who's been adressed. Even in this solution, we discard any names
             # that appear multiple times in our database, as we again have no
             # system in place to figure out which entity is meant.
             if keyword not in person_keymap.keys():
-                person_keymap[keyword] = mdb
+                person_keymap[keyword] = keyword
             else:
                 person_keymap.pop(keyword)
-    for k, v in person_keymap.items():
-        paragraph_keymap[k] = v
+    for k in person_keymap.keys():
+        person_keymap[k] = MDB.find_in_storage(forename="", surname=k, memberships=[])
 
-    return paragraph_keymap
+    return person_keymap
 
 
 def extract_paragraph(text_part:str, add_debug_obj:bool = False):
@@ -328,11 +328,11 @@ def extract_paragraph(text_part:str, add_debug_obj:bool = False):
 
     for token in text_tokens:
         if token in paragraph_keymap.keys():
-            receivers.append(paragraph_keymap[token].id)
+            receivers.append(paragraph_keymap[token])
 
     receiver_factions = Faction.in_text(text_part)
 
-    receivers.extend([f.id for f in receiver_factions])
+    receivers.extend(receiver_factions)
 
     return receivers
 
