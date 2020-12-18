@@ -16,7 +16,7 @@ async def get_factions(credentials: HTTPBasicCredentials = Depends(security)):
     factions = {}
     for faction in Faction:
         possible_names = faction._possible_names
-        showcase_name = None
+        showcase_name = "Legacy"
 
         if possible_names:
             showcase_name = possible_names[0]
