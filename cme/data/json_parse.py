@@ -59,8 +59,8 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
         fixed_factions = list()
         for f in factions:
             fixed_factions.append((
-                build_datetime(f["eintrittsDatum"]),
-                build_datetime(f["austrittsDatum"]),
+                f["eintrittsDatum"],
+                f["austrittsDatum"],
                 Faction.from_name(f["beschreibung"]).value))
         return fixed_factions
 
