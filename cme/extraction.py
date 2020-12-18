@@ -68,6 +68,8 @@ def _build_mdb(person_str, add_debug_obj):
     for mp in metadata_parts:
         found_factions = Faction.in_text(mp)
         if found_factions:
+            if len(found_factions) != 1:
+                logger.info(f"Found factions != 1: {found_factions}")
             assert len(found_factions) == 1
             faction = found_factions[0]
             break

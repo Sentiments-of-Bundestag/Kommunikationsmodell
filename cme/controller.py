@@ -22,15 +22,21 @@ def update_mdbs_from_crawler(file: Path):
         memberships = []
         for timeframe in p["fraktionen"]:
             if 'austrittsDatum' in timeframe:
-                austrittsdatum = datetime.strptime(timeframe['austrittsDatum'], '%Y-%m-%dT%H:%M:%S%z')
+                austrittsdatum = timeframe['austrittsDatum']
+                if not isinstance(austrittsdatum, datetime):
+                    austrittsdatum = datetime.fromisoformat(austrittsdatum)
             else:
                 austrittsdatum = None
 
-            membership = (datetime.strptime(timeframe['eintrittsDatum'], '%Y-%m-%dT%H:%M:%S%z'), austrittsdatum, Faction.from_mdb_description(timeframe["beschreibung"]))
+            eintrittsdatum = timeframe['eintrittsDatum']
+            if not isinstance(eintrittsdatum, datetime):
+                eintrittsdatum = datetime.fromisoformat(eintrittsdatum)
+            membership = (eintrittsdatum, austrittsdatum, Faction.from_mdb_description(timeframe["beschreibung"]))
+
             memberships.append(membership)
 
         # will auto create MDB if not yet existent
-        MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'], datetime.strptime(p['geburtsdatum'], '%Y-%m-%dT%H:%M:%S%z'), p['geburtsort'], p['titel'], p['beruf'], initial=True)
+        MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'], datetime.fromisoformat(p['geburtsdatum']), p['geburtsort'], p['titel'], p['beruf'], initial=True)
 
         #database.update_one("mdb", {"mdb_number": mdb_number}, p)
 
