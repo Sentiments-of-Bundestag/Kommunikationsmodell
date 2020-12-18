@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+from nameparser import HumanName
+
 from cme.domain import InteractionCandidate, Interaction, MDB, Faction
 from cme import utils
-
+from cme.utils import split_name_str_2, split_name_str
 
 logger = logging.getLogger("cme.extraction")
 
@@ -62,19 +64,12 @@ def _build_mdb(person_str, add_debug_obj):
 
     full_name = " ".join(person_parts)
 
-    # this can be false if in the middle of the name appears one of the
-    # following, but I think this shouldn't be the case.
-    known_titles = {"Dr.", "h.", "c."}
-    name_parts = [
-        p for p in full_name.split(" ")
-        if p not in known_titles]
-
-    name_parts = [p for p in name_parts if p]
-
     faction = ""
     for mp in metadata_parts:
         found_factions = Faction.in_text(mp)
         if found_factions:
+            if len(found_factions) != 1:
+                logger.info(f"Found factions != 1: {found_factions}")
             assert len(found_factions) == 1
             faction = found_factions[0]
             break
@@ -83,42 +78,10 @@ def _build_mdb(person_str, add_debug_obj):
     if faction:
         membership = [(datetime.min, None, faction)]
 
-    # merging of name parts which are separated with a space between a dash and the two words
-    tmp_np = name_parts.copy()
-    tmp_np.reverse()
-    name_parts.clear()
-    while tmp_np:
-        part = tmp_np.pop()
+    full_name = full_name.replace("- ", "-")
+    full_name = full_name.replace(" -", "-")
 
-        if not tmp_np:
-            name_parts.append(part)
-            break
-
-        elif part.endswith("-"):
-            name_parts.append(part + tmp_np.pop())
-        elif tmp_np[0].startswith("-"):
-            name_parts.append(part + tmp_np.pop())
-        else:
-            name_parts.append(part)
-
-    # splitting of names with german noble titles & prefix
-    # todo ralph: fix prefix removal q:D
-    prefixes = ['von der', 'von und zu', 'von', 'de', 'zu', 'van', 'vom', 'zu']
-    for prefix in prefixes:
-        if prefix in " ".join(name_parts):
-            noble_title_idx = name_parts.index("von")
-
-        if noble_title_idx > 0:
-            noble_titles = {"Freiherr", "Baron", "Fürst", "Graf", "Frhr.", "Prinz", "Gräfin", "Prinz zu"}
-            if name_parts[noble_title_idx - 1] in noble_titles:
-                noble_title_idx -= 1
-
-        forename = " ".join(name_parts[:noble_title_idx])
-        surname = " ".join(name_parts[noble_title_idx:])
-    else:
-        # fallthrough in which case the last word is assumed to be the surname
-        forename = " ".join(name_parts[:-1])
-        surname = name_parts[-1]
+    role, title, forename, surname_prefix, surname = split_name_str(full_name)
 
     # detection of malformed extractions
     malformed = not forename
@@ -126,7 +89,7 @@ def _build_mdb(person_str, add_debug_obj):
     extended_keywords = keywords.copy()
     extended_keywords.update(["am", "um", "ne", "wo", "Wo"])  # todo: add more
     for k in extended_keywords:
-        malformed = malformed or k in name_parts
+        malformed = malformed or k in full_name.split(" ")
         if malformed:
             break
 

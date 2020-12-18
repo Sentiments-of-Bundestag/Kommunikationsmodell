@@ -78,6 +78,8 @@ def manual_mode(args):
             logger.info("writing transcripts into {}.".format(out_file.absolute().as_posix()))
             with open(out_file, "w", encoding="utf-8") as o:
                 o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
+            with open(out_file.parent / "mdb.json", "w", encoding="utf-8") as o:
+                safe_json_dump(MDB._mdb_runtime_storage, o)
 
 
 def dump_mode(args):

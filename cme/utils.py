@@ -10,12 +10,16 @@ from typing import Dict, Tuple, Any, Set, IO
 import requests
 from bson import ObjectId
 from fastapi.security import HTTPBasicCredentials
+from nameparser import HumanName
 
 from cme import database
 from cme.api import error
 
 IGNORED_KEYWORDS = ["Zwischenfrage", "Gegenfrage", "Unruhe", "Glocke der Präsidentin",
                     "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne", "Heiterkeit", "Nachfrage"]
+
+
+
 
 
 class SafeJsonEncoder(json.JSONEncoder):
@@ -158,10 +162,58 @@ def find_non_ascii_chars(obj: Any) -> Set[str]:
     return found_chars
 
 
-def split_name_str(person_str) -> Tuple[str, str, str, str]:
+def split_name_str_2(person_str: str) -> Tuple[str, str, str, str]:
+    hn = HumanName(person_str)
+
+    title = hn.title
+    forename = hn.first
+    surname = hn.last
+
+    ge_noble_titles = [
+        "Baronin", "Baron", "Freiherr", "Frhr.", "Fürstin", "Fürst", "Gräfin", "Graf",
+        "Prinzessin", "Prinz"]
+    known_prefixes = [
+        "von und zu", "von der", "de", "van", "vom", "von", "zu"]
+
+    # grab noble title and add to surname_prefix
+    found_prefixes = []
+    if hn.middle_list:
+        middle_parts = hn.middle_list
+
+        for m_idx in range(len(middle_parts)):
+            candidate = middle_parts[m_idx]
+            if candidate in ge_noble_titles:
+                found_prefixes.append(candidate)
+                middle_parts = middle_parts[m_idx + 1:]
+                break
+
+        for m_idx in range(len(middle_parts)):
+            candidate = middle_parts[m_idx]
+            if candidate in known_prefixes:
+                found_prefixes.append(candidate)
+                break
+
+    for prefix in known_prefixes:
+        if surname.startswith(prefix):
+            found_prefixes.append(prefix)
+            surname = surname.replace(prefix, "").strip()
+            break
+
+    surname_prefix = " ".join(found_prefixes)
+
+    return title, forename, surname_prefix, surname
+
+
+def split_name_str(person_str: str) -> Tuple[str, str, str, str, str]:
+
+    # random special cases
+    person_str = person_str.replace("Vizepräsident in", "Vizepräsidentin")
+
     name_parts = person_str.split(" ")
 
-    known_roles = ["Präsident", "Vizepräsident", "Alterspräsident"]
+    known_roles = [
+        "Präsident", "Vizepräsident", "Alterspräsident"]
+
     found_role = ""
     for role in known_roles:
         if name_parts[0].startswith(role):
@@ -169,27 +221,15 @@ def split_name_str(person_str) -> Tuple[str, str, str, str]:
             name_parts.pop(0)
             break
 
-    # this can be false if in the middle of the name appears one of the
-    # following, but I think this shouldn't be the case.
-    known_titles = {"Dr.", "h.", "c."}
-    found_titles = " ".join([p for p in name_parts if p in known_titles])
-    name_parts = [p for p in name_parts if p not in known_titles]
-
-    # remove eventual break ups of the roles for example in "Vizepräsident in"
-    name_parts = [p for p in name_parts if not p.islower()]
-
-    # removal of potential empty spaces
-    name_parts = [p for p in name_parts if p]
-
-    forename = " ".join(name_parts[:-1])
-    surname = name_parts[-1]
+    title, forename, surname_prefix, surname = split_name_str_2(
+        " ".join(name_parts))
 
     if not forename:
         logging.error(f"splitted a person string ({person_str}) without a forename!")
     if not surname:
         logging.error(f"splitted a person string ({person_str}) without a surname!")
 
-    return found_role, found_titles, forename, surname
+    return found_role, title, forename, surname_prefix, surname
 
 
 def run_async(coro):

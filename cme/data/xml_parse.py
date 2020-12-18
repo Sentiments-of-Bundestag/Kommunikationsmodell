@@ -49,8 +49,8 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
             if isinstance(el, bs4e.NavigableString):
                 continue
             elif el.name == "name" or (el.name == "p" and el.get("klasse") == "N"):
-                # todo: convert this to a dict
-                role, title, first_name, last_name = split_name_str(
+                # todo: correctly handle all splitted parts
+                role, title, first_name, surname_prefix, last_name = split_name_str(
                     cleanup_str(el.getText().rstrip(":")))
                 curr_speaker = {
                     "forename": cleanup_str(first_name),

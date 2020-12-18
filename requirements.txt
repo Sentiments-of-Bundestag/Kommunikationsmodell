@@ -9,3 +9,4 @@ ujson==4.0.1
 requests
 python-dotenv
 pymongo
+nameparser
