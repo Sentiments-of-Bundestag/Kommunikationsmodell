@@ -21,24 +21,28 @@ def update_mdbs_from_crawler(file: Path):
     for p in persons:
         memberships = []
         for timeframe in p["fraktionen"]:
+            austrittsdatum = None
             if 'austrittsDatum' in timeframe:
-                austrittsdatum = timeframe['austrittsDatum']
-                if not isinstance(austrittsdatum, datetime):
-                    austrittsdatum = datetime.fromisoformat(austrittsdatum)
-            else:
-                austrittsdatum = None
+                austrittsdatum = get_safe_datetime(timeframe['austrittsDatum'])
 
-            eintrittsdatum = timeframe['eintrittsDatum']
-            if not isinstance(eintrittsdatum, datetime):
-                eintrittsdatum = datetime.fromisoformat(eintrittsdatum)
+            eintrittsdatum = get_safe_datetime(timeframe['eintrittsDatum'])
             membership = (eintrittsdatum, austrittsdatum, Faction.from_mdb_description(timeframe["beschreibung"]))
 
             memberships.append(membership)
 
         # will auto create MDB if not yet existent
-        MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'], datetime.fromisoformat(p['geburtsdatum']), p['geburtsort'], p['titel'], p['beruf'], initial=True)
+        MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'],
+                                    get_safe_datetime(p['geburtsdatum']), p['geburtsort'], p['titel'], p['beruf'],
+                                    initial=True)
 
         #database.update_one("mdb", {"mdb_number": mdb_number}, p)
+
+
+def get_safe_datetime(date):
+    if not isinstance(date, datetime):
+        date = datetime.fromisoformat(date)
+    return date
+
 
 
 def init_mdb_collection(file: Path):
