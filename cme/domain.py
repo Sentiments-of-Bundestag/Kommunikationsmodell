@@ -26,6 +26,9 @@ class Faction(Enum):
         obj._value_ = f_id
         obj._possible_names = possible_names
 
+        if not possible_names:
+            obj._possible_names = list()
+
         return obj
 
     CDU_AND_CSU = (["CDU/CSU", "CDU", "CSU", "Christlich Demokratische Union",
