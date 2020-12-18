@@ -266,10 +266,8 @@ def get_crawled_session(session_id: str) -> dict:
 
 
 def notify_sentiment_analysis_group(session_list: list):
-    # todo: update when group 3 has data
-    sentiment_analysis_ip = os.environ.get("SENTIMENT_ANALYSIS_IP")
-    url = f"{sentiment_analysis_ip}/update"
-    response = requests.post(url, json=session_list)
+    sentiment_address = os.environ.get("SENTIMENT_ADDRESS")
+    response = requests.post(sentiment_address, json={'new_ids': session_list})
     if response.status_code in [200, 204]:
         logging.info(f"Successfully notified sentiment analysis about updated sessions")
 

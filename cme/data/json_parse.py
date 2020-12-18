@@ -2,54 +2,14 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple
 
 from cme import utils, database
 from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction, Transcript
-from cme.extraction import extract_communication_model
 from cme.utils import build_datetime
 
 
 logger = logging.getLogger("cme.json")
-
-
-def evaluate_newest_sessions(id_list: List[str]):
-    # todo: should this not be moved into extraction.py? as this is only to
-    #  read the raw data and not to interpret it?
-    # wasn't this the spot (extraction.py) were I first put it? :D (oskar <3)
-
-    for id in id_list:
-        transcripts = []
-        current_session = utils.get_crawled_session(id)
-        if not current_session:
-            logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
-            return
-
-        file_content = read_transcripts_json(current_session)
-        for metadata, inter_candidates in file_content:
-            transcript = Transcript.from_interactions(
-                metadata=metadata,
-                interactions=extract_communication_model(inter_candidates))
-
-            transcripts.append(transcript)
-
-            # write to DB
-            if len(transcript.interactions) == 0:
-                logging.warning(f"Could not find any interactions in session with id '{id}'")
-            else:
-                session_id = str(transcript.session_no)
-                logging.info(f"Inserting evaluated session '{session_id}' with {len(transcript.interactions)} interactions into DB")
-
-                transcript_dict = transcript.dict()
-                transcript_dict['session_id'] = session_id
-                database.update_one("session", {"session_id": session_id}, transcript_dict)
-
-                # save to file
-                # with open(f"transcript_{session_id}.json", "w", encoding="utf-8") as o:
-                #    o.write(transcript.json(exclude_none=True, indent=4, ensure_ascii=False))
-
-    # todo: notify sentiment group about updated id's
-        # cm = CommunicationModel(transcripts=transcripts)
 
 
 def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> List[InteractionCandidate]:

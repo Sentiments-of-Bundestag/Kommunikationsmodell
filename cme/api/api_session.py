@@ -5,9 +5,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.status import HTTP_200_OK
 
-from cme import database, utils
+from cme import database, utils, controller
 from cme.api import error
-from cme.data import json_parse
+
 
 router = APIRouter()
 security = HTTPBasic()
@@ -21,7 +21,7 @@ async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks,
 
     # create subprocess: background task to get new protocols and iterate over (start parser/cme)
     logging.info(f"Received update request for sessions '{ids}'")
-    background_tasks.add_task(json_parse.evaluate_newest_sessions, ids)
+    background_tasks.add_task(controller.evaluate_newest_sessions, ids)
 
     return {"details: ": f"Background task has been created to evaluate newest sessions with ids: '{ids}'"}
 
