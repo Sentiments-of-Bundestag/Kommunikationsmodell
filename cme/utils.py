@@ -53,9 +53,11 @@ def reverse_dict(dict_obj: Dict) -> Dict:
     return {v: _rebuild_dict(k) for k, v in dict_obj.items()}
 
 
-def build_datetime(date_str: str, time_str: str = None, date_order: str = "DMY") -> datetime:
+def build_datetime(date_str: str or datetime, time_str: str = None, date_order: str = "DMY") -> datetime:
     if not date_str:
         return None
+    if isinstance(date_str, datetime):
+        return date_str
 
     datetime_args = list()
 
