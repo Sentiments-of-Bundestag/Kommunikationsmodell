@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 from cme.domain import InteractionCandidate, Interaction, MDB, Faction
-from cme import utils
+from cme import utils, database
 
 
 logger = logging.getLogger("cme.extraction")
@@ -302,7 +302,7 @@ def retrieve_paragraph_keymap(add_debug_obj:bool = False):
     mdb_list = MDB.find_known_mdbs()
     if len(mdb_list) > 0:
         for mdb in mdb_list:
-            keyword = mdb['surname'].lower()
+            keyword = mdb['surname']
             # TODO disambiguation improvement
             # for now, we opt to look for
             # mdb references only by their surname, as we have no method
@@ -310,25 +310,29 @@ def retrieve_paragraph_keymap(add_debug_obj:bool = False):
             # who's been adressed. Even in this solution, we discard any names
             # that appear multiple times in our database, as we again have no
             # system in place to figure out which entity is meant.
+            # TODO fix triple occurence
             if keyword not in person_keymap.keys():
                 person_keymap[keyword] = keyword
-            else:
-                person_keymap.pop(keyword)
     for k in person_keymap.keys():
-        person_keymap[k] = MDB.find_in_storage(forename="", surname=k, memberships=[])
+        people = database.find_many("mdb", {"surname": k})
+        if not len(people) > 1:
+            person_keymap[k] = MDB(**people[0])
 
     return person_keymap
 
 
-def extract_paragraph(text_part:str, add_debug_obj:bool = False):
-    paragraph_keymap = retrieve_paragraph_keymap()
-    text_tokens = text_part.lower().split(" ")
+def extract_paragraph(text_part:str, paragraph_keymap, add_debug_obj:bool = False):
+
+    text_tokens = text_part.split(" ")
 
     receivers = []
+    paragraph_keywords = paragraph_keymap.keys()
 
     for token in text_tokens:
-        if token in paragraph_keymap.keys():
-            receivers.append(paragraph_keymap[token])
+        if token in paragraph_keywords:
+            receiver = paragraph_keymap[token]
+            if isinstance(receiver, MDB):
+                receivers.append(receiver)
 
     receiver_factions = Faction.in_text(text_part)
 
@@ -342,9 +346,22 @@ def _extract_all_interactions(
         add_debug_obj: bool = False) -> List[Interaction]:
 
     reformatted_interactions = list()
+    paragraph_keymap = retrieve_paragraph_keymap()
 
     for candidate in candidates:
         if candidate.comment is not None:
+            # TODO extract paragraph as well
+            # extract paragraph interaction
+            paragraph_text = candidate.paragraph
+            receivers = extract_paragraph(paragraph_text, paragraph_keymap, add_debug_obj)
+            if len(receivers) > 0:
+                for receiver in receivers:
+                    reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text)
+                    if reformatted_interaction:
+                        reformatted_interactions.append(reformatted_interaction)
+            else:
+                logger.warning(f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
+
             # extract comment interaction
             full_text = candidate.comment.strip()
             comment_parts = split_comments(full_text)
@@ -357,10 +374,11 @@ def _extract_all_interactions(
                         reformatted_interaction = reformat_interaction(sender, candidate.speaker, message)
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
+
         else:
             # extract paragraph interaction
             paragraph_text = candidate.paragraph
-            receivers = extract_paragraph(paragraph_text, add_debug_obj)
+            receivers = extract_paragraph(paragraph_text, paragraph_keymap, add_debug_obj)
             if len(receivers) > 0:
                 for receiver in receivers:
                     reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text)
