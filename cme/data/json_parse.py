@@ -64,7 +64,7 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
             fixed_factions.append((
                 build_datetime(f["eintrittsDatum"]),
                 austrittsdatum,
-                Faction.from_name(f["beschreibung"]).value))
+                Faction.from_mdb_description(f["beschreibung"]).value))
         return fixed_factions
 
     conv_map = dict()
