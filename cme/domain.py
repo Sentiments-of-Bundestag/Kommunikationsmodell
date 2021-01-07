@@ -25,19 +25,19 @@ class Faction(Enum):
         return obj
 
     CDU_AND_CSU = (["CDU/CSU", "CDU", "CSU", "Christlich Demokratische Union",
-                    "Christlich-Soziale Union", "Union", "Schwarz",
+                    "Christlich-Soziale Union",
                     "Fraktion der Christlich Demokratischen Union/Christlich - Sozialen Union",
                     "Fraktion der CDU/CSU (Gast)"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
-            "Sozialdemokrat", "Rot", "Fraktion der Sozialdemokratischen Partei Deutschlands",
+            "Sozialdemokrat", "Fraktion der Sozialdemokratischen Partei Deutschlands",
             "Fraktion der SPD (Gast)"])
-    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot", "Fraktion DIE LINKE."])
+    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Fraktion DIE LINKE."])
     DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
-                   "Die Grünen", "Bündnis 90", "Grün", "Fraktion Bündnis 90/Die Grünen", "Gruppe Bündnis 90/Die Grünen",
+                   "Die Grünen", "Bündnis 90", "Fraktion Bündnis 90/Die Grünen", "Gruppe Bündnis 90/Die Grünen",
                    "Fraktion Die Grünen", "Fraktion Die Grünen/Bündnis 90"])
-    AFD = (["AfD", "Alternative für Deutschland", "Blau"])
+    AFD = (["AfD", "Alternative für Deutschland"])
     FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
-            "Liberale", "Gelb", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
+            "Liberale", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
     NONE = (["Fraktionslos", "fraktionslos"])
     LEGACY = (["Legacy"])
 
