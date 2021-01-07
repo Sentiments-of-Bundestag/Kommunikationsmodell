@@ -264,7 +264,7 @@ def split_comments(full_text: str, split_char: str = u"\u2013") -> List[str]:
     return splitted
 
 
-def reformat_interaction(sender, receiver, message):
+def reformat_interaction(sender, receiver, message, from_paragraph: bool = True):
     sender_malformed = isinstance(sender, MalformedMDB)
     receiver_malformed = isinstance(receiver, MalformedMDB)
     if sender_malformed or receiver_malformed:
@@ -291,7 +291,8 @@ def reformat_interaction(sender, receiver, message):
     inter = {
         "sender": sender,
         "receiver": receiver,
-        "message": message}
+        "message": message,
+        "from_paragraph": from_paragraph}
 
     return Interaction(**inter)
 
@@ -356,7 +357,7 @@ def _extract_all_interactions(
             receivers = extract_paragraph(paragraph_text, paragraph_keymap, add_debug_obj)
             if len(receivers) > 0:
                 for receiver in receivers:
-                    reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text)
+                    reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text, True)
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
             else:
@@ -369,9 +370,9 @@ def _extract_all_interactions(
                 extracted_senders = extract_comment(comment_part)
                 for sender, receiver, message in extracted_senders:
                     if receiver:
-                        reformatted_interaction = reformat_interaction(sender, receiver, message)
+                        reformatted_interaction = reformat_interaction(sender, receiver, message, False)
                     else:
-                        reformatted_interaction = reformat_interaction(sender, candidate.speaker, message)
+                        reformatted_interaction = reformat_interaction(sender, candidate.speaker, message, False)
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
 
@@ -381,7 +382,7 @@ def _extract_all_interactions(
             receivers = extract_paragraph(paragraph_text, paragraph_keymap, add_debug_obj)
             if len(receivers) > 0:
                 for receiver in receivers:
-                    reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text)
+                    reformatted_interaction = reformat_interaction(candidate.speaker, receiver, paragraph_text, True)
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
             else:

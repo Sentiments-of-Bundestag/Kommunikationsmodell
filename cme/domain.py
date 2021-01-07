@@ -283,6 +283,7 @@ class Interaction(BaseModel):
     sender: Union[MDB, Faction, str]
     receiver: Union[MDB, Faction, str]
     message: str
+    from_paragraph: bool
     debug: Optional[Dict]
 
     def dict(self, *args, **kwargs) -> Dict:
