@@ -32,14 +32,19 @@ class Faction(Enum):
         return obj
 
     CDU_AND_CSU = (["CDU/CSU", "CDU", "CSU", "Christlich Demokratische Union",
-                    "Christlich-Soziale Union", "Union", "Schwarz"])
+                    "Christlich-Soziale Union",
+                    "Fraktion der Christlich Demokratischen Union/Christlich - Sozialen Union",
+                    "Fraktion der CDU/CSU (Gast)"])
     SPD = (["SPD", "Sozialdemokratische Partei", "Sozialdemokraten",
-            "Sozialdemokrat", "Rot"])
-    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Rot", "Fraktion DIE LINKE."])
+            "Sozialdemokrat", "Fraktion der Sozialdemokratischen Partei Deutschlands",
+            "Fraktion der SPD (Gast)"])
+    DIE_LINKE = (["DIE LINKE", "LINKE", "Linke", "Linkspartei", "Fraktion DIE LINKE."])
     DIE_GRÜNEN = (["BÜNDNIS90/DIE GRÜNEN", "BÜNDNIS 90/DIE GRÜNEN", "BÜNDNISSES 90/DIE GRÜNEN", "Bündnis 90/Die Grünen",
-                   "Die Grünen", "Bündnis 90", "Grün"])
-    AFD = (["AfD", "Alternative für Deutschland", "Blau"])
-    FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten", "Liberale", "Gelb"])
+                   "Die Grünen", "Bündnis 90", "Fraktion Bündnis 90/Die Grünen", "Gruppe Bündnis 90/Die Grünen",
+                   "Fraktion Die Grünen", "Fraktion Die Grünen/Bündnis 90"])
+    AFD = (["AfD", "Alternative für Deutschland"])
+    FDP = (["FDP", "Freie Demokratische Partei", "Freie Demokraten",
+            "Liberale", "Fraktion der Freien Demokratischen Partei", "Fraktion der FDP (Gast)"])
     NONE = (["Fraktionslos", "fraktionslos"])
     LEGACY = ()
 
@@ -202,6 +207,20 @@ class MDB(BaseModel):
         return self.speaker_id
 
     @classmethod
+    def find_known_mdbs(cls) -> List["MDB"]:
+        def _find_all() -> Optional[List[Dict]]:
+            if cls._storage_type == "mongodb":
+                return database.find_many("mdb")
+            elif cls._storage_type == "runtime":
+                return list(cls._mdb_runtime_storage.values())
+            else:
+                raise RuntimeError("unsupported storage type!")
+
+        mdbs = _find_all()
+        logger.debug(f"retrieved {len(mdbs)} MDB entities from {cls._storage_type}")
+        return mdbs
+
+    @classmethod
     def find_and_add_in_storage(
             cls,
             forename: str,
@@ -304,6 +323,7 @@ class Interaction(BaseModel):
     sender: Union[MDB, Faction, str]
     receiver: Union[MDB, Faction, str]
     message: str
+    from_paragraph: bool
     debug: Optional[Dict]
 
     def dict(self, *args, **kwargs) -> Dict:

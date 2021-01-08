@@ -39,7 +39,7 @@ def _open_db_connection(
     if test_connection:
         try:
             collections = db.list_collection_names()
-            logger.info(f"Connection to external DB was successful.")
+            logger.info(f"Connection to DB with address '{address}' was successful.")
         except ServerSelectionTimeoutError as err:
             logging.error(f"Timeout while connecting to external DB, error: {err}")
             raise RuntimeError(
@@ -59,6 +59,12 @@ def _get_credentials(
     password = os.getenv(password_key)
     address = os.getenv(address_key)
     db_name = os.getenv(db_name_key)
+
+    if not username or not password or not address or not db_name:
+        logger.warning(
+            f"Credential extraction failed due to missing at least one of the "
+            f"following environment variables: {username_key}, "
+            f"{password_key}, {address_key}, {db_name_key}")
 
     return username, password, address, db_name
 
@@ -118,12 +124,14 @@ def find_all_ids(collection_name: str, attribute_name: str):
     return [session['session_id'] for session in result]
 
 
-def find_many(collection_name: str, query: dict, exclude: dict = None) -> list:
+def find_many(collection_name: str = None, query: dict = None, exclude: dict = None) -> list:
     db = get_cme_db()
     if exclude:
         cursor = db[collection_name].find(query, exclude)
-    else:
+    elif query:
         cursor = db[collection_name].find(query)
+    else:
+        cursor = db[collection_name].find()
     list = []
     for item in cursor:
         list.append(item)
