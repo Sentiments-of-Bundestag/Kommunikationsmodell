@@ -39,7 +39,7 @@ def _open_db_connection(
     if test_connection:
         try:
             collections = db.list_collection_names()
-            logger.info(f"Connection to external DB was successful.")
+            logger.info(f"Connection to DB with address '{address}' was successful.")
         except ServerSelectionTimeoutError as err:
             logging.error(f"Timeout while connecting to external DB, error: {err}")
             raise RuntimeError(

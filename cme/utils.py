@@ -5,7 +5,7 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Dict, Tuple, Any, Set, IO
+from typing import Dict, Tuple, Any, Set, IO, List
 
 import requests
 from bson import ObjectId
@@ -17,9 +17,6 @@ from cme.api import error
 
 IGNORED_KEYWORDS = ["Zwischenfrage", "Gegenfrage", "Unruhe", "Glocke der Präsidentin",
                     "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne", "Heiterkeit", "Nachfrage"]
-
-
-
 
 
 class SafeJsonEncoder(json.JSONEncoder):
@@ -267,11 +264,21 @@ def get_crawled_session(session_id: str) -> dict:
     return {}
 
 
-def notify_sentiment_analysis_group(session_list: list):
+def notify_sentiment_analysis_group(session_list: List[str]):
     sentiment_address = os.environ.get("SENTIMENT_ADDRESS")
-    response = requests.post(sentiment_address, json={'new_ids': session_list})
-    if response.status_code in [200, 204]:
-        logging.info(f"Successfully notified sentiment analysis about updated sessions")
+    if not sentiment_address:
+        logging.error(f"Please provide the env var: 'SENTIMENT_ADDRESS' to notify sentiment group.")
+        return
+
+    try:
+        response = requests.post(sentiment_address, json={'new_ids': session_list})
+
+        if response.status_code in [200, 204]:
+            logging.info(f"Successfully notified sentiment analysis about updated sessions")
+        else:
+            logging.warning(f"Could not notify sentiment group. Response: '{response.status_code} - {response.text}")
+    except requests.exceptions.ConnectionError:
+        logging.exception(f"Could not connect to '{sentiment_address}' for ids: '{session_list}.")
 
 
 def get_basic_auth_client(credentials: HTTPBasicCredentials):

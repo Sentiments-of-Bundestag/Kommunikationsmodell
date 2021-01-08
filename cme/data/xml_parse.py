@@ -5,8 +5,9 @@ from typing import List, Tuple
 
 from bs4 import BeautifulSoup, element as bs4e
 
+
 from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
-from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars, logging_is_needed
+from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars, logging_is_needed, get_session_id_safe
 
 logger = logging.getLogger("cme.data")
 
@@ -29,7 +30,7 @@ def _extract_metadata_xml(root_el: bs4e.Tag) -> SessionMetadata:
     session_end = root_el.get("sitzung-ende-uhrzeit")
 
     return SessionMetadata(
-        session_no=int(sn_el.getText()),
+        session_no=get_session_id_safe(lp_el.getText(), sn_el.getText()),
         legislative_period=int(lp_el.getText()),
         start=build_datetime(date_str, session_start),
         end=build_datetime(date_str, session_end))
