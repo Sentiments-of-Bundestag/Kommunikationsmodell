@@ -331,7 +331,7 @@ def _extract_all_interactions(
                 logger.warning(f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
 
             # extract comment interaction
-            full_text = candidate.comment.strip()
+            full_text = candidate.comment.strip("()")
             comment_parts = split_comments(full_text)
             for comment_part in comment_parts:
                 extracted_senders = extract_comment(comment_part)
