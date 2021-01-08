@@ -61,17 +61,22 @@ def manual_mode(args):
             # insert into DB
             if not args.dry_run:
                 logger.info("writing transcript into db.")
-                session_id = utils.get_session_id_safe(str(transcript.legislative_period), str(transcript.session_no))
                 database.update_one(
                     "session",
                     {
-                        "session_id": session_id
+                        "session_id": transcript.session_no
                     },
                     transcript.dict(exclude_none=True))
 
             transcripts.append(transcript)
 
+            # notify sentiment group
+            if args.notify and transcript:
+                utils.notify_sentiment_analysis_group([str(transcript.session_no)])
+
         cm = CommunicationModel(transcripts=transcripts)
+
+
 
         if args.dry_run:
             out_file: Path = file.with_suffix(".converted.json")
@@ -146,6 +151,7 @@ def main():
     manual_parser.add_argument("files", nargs="+", type=Path)
     manual_parser.add_argument("--dry-run", default=False, action="store_true")
     manual_parser.add_argument("--add-debug-objects", default=False, action="store_true")
+    manual_parser.add_argument("--notify", default=False, action="store_true")
     manual_parser.set_defaults(func=manual_mode)
 
     dump_parser = subparsers.add_parser("dump", aliases=["d"])
