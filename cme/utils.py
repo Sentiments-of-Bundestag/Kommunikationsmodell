@@ -277,7 +277,7 @@ def notify_sentiment_analysis_group(session_list: List[str]):
             logging.info(f"Successfully notified sentiment analysis about updated sessions")
         else:
             logging.warning(f"Could not notify sentiment group. Response: '{response.status_code} - {response.text}")
-    except ConnectionError:
+    except requests.exceptions.ConnectionError:
         logging.exception(f"Could not connect to '{sentiment_address}' for ids: '{session_list}.")
 
 
