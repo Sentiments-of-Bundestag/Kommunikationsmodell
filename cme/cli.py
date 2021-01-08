@@ -66,7 +66,7 @@ def manual_mode(args):
                     {
                         "session_id": transcript.session_no
                     },
-                    transcript.dict(exclude_none=True))
+                    transcript.dict(exclude_none=True, exclude_unset=True))
 
             transcripts.append(transcript)
 
