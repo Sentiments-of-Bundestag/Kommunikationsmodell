@@ -60,9 +60,10 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
         for f in factions:
             austrittsdatum = None
             if 'austrittsDatum' in f:
-                austrittsdatum = f["austrittsDatum"]
+                austrittsdatum = datetime.fromisoformat(f["austrittsDatum"])
             fixed_factions.append((
-                build_datetime(f["eintrittsDatum"]),
+                # build_datetime(f["eintrittsDatum"]),
+                datetime.fromisoformat(f["eintrittsDatum"]),
                 austrittsdatum,
                 Faction.from_mdb_description(f["beschreibung"]).value))
         return fixed_factions
