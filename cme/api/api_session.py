@@ -44,7 +44,7 @@ async def get_session_ids(credentials: HTTPBasicCredentials = Depends(security))
     utils.get_basic_auth_client(credentials)
 
     session_ids = database.find_all_ids('session', 'session_id')
-    return session_ids
+    return session_ids.sort()
 
 
 @router.get("/period/{legislative_period}", status_code=HTTP_200_OK, tags=['data'])
