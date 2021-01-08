@@ -40,3 +40,6 @@ pyvenv.cfg
 
 # mac stuff
 .DS_Store
+/start_dev_db.max.sh
+/.env.dev.max
+/docker-compose.dev.max.yml

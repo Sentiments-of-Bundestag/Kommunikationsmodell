@@ -15,7 +15,7 @@ The desired workflow with teams working before and after the communication model
 For installation, you need two services
 1. The API, which also contains the `Communication Model Extractor` (or `cme` for short) and all the business logic.
 2. A mongodb.
-
+ 
 ### API
 
 The project is structured as an installable python package. We highly recommend setting up a 
