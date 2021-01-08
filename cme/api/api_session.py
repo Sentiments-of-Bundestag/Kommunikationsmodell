@@ -27,7 +27,7 @@ async def post_new_ids(ids: List[str], background_tasks: BackgroundTasks,
 
 
 @router.get("/session/{session_id}", status_code=HTTP_200_OK, tags=['data'])
-async def get_session(session_id: str, credentials: HTTPBasicCredentials = Depends(security)):
+async def get_session(session_id: int, credentials: HTTPBasicCredentials = Depends(security)):
     utils.get_basic_auth_client(credentials)
 
     # id = legislative period + session eg: 19177
