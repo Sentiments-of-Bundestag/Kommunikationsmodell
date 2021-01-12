@@ -43,10 +43,11 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
                         comment=None))
                     last_paragraph = sp_part["text"]
                 elif part_type.lower() == "kommentar":
-                    candidates.append(InteractionCandidate(
-                        speaker=speaker,
-                        paragraph=utils.cleanup_str(last_paragraph),
-                        comment=utils.cleanup_str(sp_part["text"])))
+                    if last_paragraph and speaker:
+                        candidates.append(InteractionCandidate(
+                            speaker=speaker,
+                            paragraph=utils.cleanup_str(last_paragraph),
+                            comment=utils.cleanup_str(sp_part["text"])))
                     last_paragraph = None
                 else:
                     last_paragraph = sp_part["text"]
