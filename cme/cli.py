@@ -100,6 +100,9 @@ def dump_mode(args):
     elif args.collection:
         if args.index:
             obj = db[args.collection].find_one({args.index_field: args.index})
+            # _id is an integer so we cast
+            if args.index_field == "_id":
+                obj = db[args.collection].find_one({args.index_field: int(args.index)})
         else:
             obj = list()
             for doc in db[args.collection].find():
