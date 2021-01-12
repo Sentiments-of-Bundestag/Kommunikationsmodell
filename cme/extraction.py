@@ -2,16 +2,13 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import List
 
-from cme.domain import InteractionCandidate, Interaction, MDB, Faction
-from cme import utils
-from cme.utils import split_name_str_2, split_name_str
 from cme import utils, database
-
+from cme.domain import InteractionCandidate, Interaction, MDB, Faction
+from cme.utils import split_name_str
 
 logger = logging.getLogger("cme.extraction")
-
 
 keywords = {
     "Beifall", "Zuruf", "Heiterkeit", "Zurufe", "Lachen",
@@ -117,7 +114,7 @@ def _build_mdb(person_str, add_debug_obj):
 human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.*\[+.+])")
 
 
-def extract_comment(text_part:str, add_debug_obj: bool = False):
+def extract_comment(text_part: str, add_debug_obj: bool = False):
     # converting direct speech separated with a colon
     if ":" in text_part:
         ps, pm = [s.strip() for s in text_part.split(":", 1)]
@@ -264,7 +261,7 @@ def reformat_interaction(sender, receiver, message, from_paragraph: bool = True)
     return Interaction(**inter)
 
 
-def retrieve_paragraph_keymap(add_debug_obj:bool = False):
+def retrieve_paragraph_keymap(add_debug_obj: bool = False):
     # fetch person list from mdb database
     person_keymap = {}
     mdb_list = MDB.find_known_mdbs()
@@ -289,8 +286,7 @@ def retrieve_paragraph_keymap(add_debug_obj:bool = False):
     return person_keymap
 
 
-def extract_paragraph(text_part:str, paragraph_keymap, add_debug_obj:bool = False):
-
+def extract_paragraph(text_part: str, paragraph_keymap, add_debug_obj: bool = False):
     text_tokens = text_part.split(" ")
 
     receivers = []
@@ -312,7 +308,6 @@ def extract_paragraph(text_part:str, paragraph_keymap, add_debug_obj:bool = Fals
 def _extract_all_interactions(
         candidates: List[InteractionCandidate],
         add_debug_obj: bool = False) -> List[Interaction]:
-
     reformatted_interactions = list()
     paragraph_keymap = retrieve_paragraph_keymap()
 
@@ -328,7 +323,8 @@ def _extract_all_interactions(
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
             else:
-                logger.warning(f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
+                logger.warning(
+                    f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
 
             # extract comment interaction
             full_text = candidate.comment.strip("()")
@@ -353,7 +349,8 @@ def _extract_all_interactions(
                     if reformatted_interaction:
                         reformatted_interactions.append(reformatted_interaction)
             else:
-                logger.warning(f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
+                logger.warning(
+                    f"Couldn't extract a message receiver from paragraph \"{paragraph_text}\", dropping it now...")
 
     return reformatted_interactions
 
@@ -361,7 +358,6 @@ def _extract_all_interactions(
 def _extract_comment_interactions(
         candidates: List[InteractionCandidate],
         add_debug_obj: bool = False) -> List[Interaction]:
-
     human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.*\[+.+])")
     reformatted_interactions = list()
 
@@ -551,7 +547,6 @@ def extract_communication_model(
         candidates: List[InteractionCandidate],
         add_debug_objects: bool = False) \
         -> List[Interaction]:
-
     # extract comment interactions only
     # interactions = _extract_comment_interactions(
     #     list(filter(lambda i: i.comment is not None, candidates)),

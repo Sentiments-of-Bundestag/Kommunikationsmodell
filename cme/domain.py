@@ -1,12 +1,15 @@
 """This module contains all our internally used data structures in a central
 place"""
+import json
+import logging
+import uuid
 from datetime import datetime
 from enum import Enum
-from cme import database
-from typing import List, Optional, Dict, Set, Tuple, Union
-import logging, uuid, json
+from typing import List, Optional, Dict, Tuple, Union
 
 from pydantic import BaseModel
+
+from cme import database
 
 logger = logging.getLogger("cme.domain")
 

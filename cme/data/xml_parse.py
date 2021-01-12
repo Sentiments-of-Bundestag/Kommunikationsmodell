@@ -5,9 +5,9 @@ from typing import List, Tuple
 
 from bs4 import BeautifulSoup, element as bs4e
 
-
 from cme.domain import InteractionCandidate, SessionMetadata, MDB, Faction
-from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars, logging_is_needed, get_session_id_safe
+from cme.utils import cleanup_str, split_name_str, build_datetime, find_non_ascii_chars, logging_is_needed, \
+    get_session_id_safe
 
 logger = logging.getLogger("cme.data")
 
@@ -83,7 +83,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     new_para_str = cleanup_str(el.getText())
                     if curr_paragraph is not None:
                         if not curr_speaker:
-                            #logger.warning(
+                            # logger.warning(
                             #    "found a new paragraph but couldn't finish "
                             #    "the old one as there has been no speaker so "
                             #    "far! dropping the old one (\"{}\") now...".format(curr_paragraph))

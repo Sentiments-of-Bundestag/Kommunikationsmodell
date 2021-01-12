@@ -8,7 +8,6 @@ from starlette.status import HTTP_200_OK
 from cme import database, utils, controller
 from cme.api import error
 
-
 router = APIRouter()
 security = HTTPBasic()
 

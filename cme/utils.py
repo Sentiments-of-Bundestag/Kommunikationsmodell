@@ -16,7 +16,8 @@ from cme import database
 from cme.api import error
 
 IGNORED_KEYWORDS = ["Zwischenfrage", "Gegenfrage", "Unruhe", "Glocke der Präsidentin",
-                    "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne", "Heiterkeit", "Nachfrage"]
+                    "Kurzintervention", "nimmt Platz", "Beifall im ganzen Hause", "Unterbrechung", "Nationalhymne",
+                    "Heiterkeit", "Nachfrage"]
 
 
 class SafeJsonEncoder(json.JSONEncoder):
@@ -204,7 +205,6 @@ def split_name_str_2(person_str: str) -> Tuple[str, str, str, str]:
 
 
 def split_name_str(person_str: str) -> Tuple[str, str, str, str, str]:
-
     # random special cases
     person_str = person_str.replace("Vizepräsident in", "Vizepräsidentin")
 

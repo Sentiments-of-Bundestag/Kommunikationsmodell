@@ -4,10 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Tuple
 
-from cme import utils, database
-from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction, Transcript
-from cme.utils import build_datetime
-
+from cme import utils
+from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction
 
 logger = logging.getLogger("cme.json")
 
@@ -98,7 +96,6 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
 def read_transcripts_json(
         transcript: Dict) \
         -> List[Tuple[SessionMetadata, List[InteractionCandidate]]]:
-
     def _merge_datetimes(datepart, timepart) -> datetime:
         if isinstance(datepart, datetime):
             datepart = datepart.isoformat()

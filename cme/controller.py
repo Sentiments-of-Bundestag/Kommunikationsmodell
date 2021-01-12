@@ -1,15 +1,14 @@
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import List
 
-from cme.extraction import extract_communication_model
-from cme.data.json_parse import read_transcripts_json
-from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction, Transcript
 from cme import utils, database
-
+from cme.data.json_parse import read_transcripts_json
 from cme.domain import Faction, MDB
+from cme.domain import Transcript
+from cme.extraction import extract_communication_model
 
 logger = logging.getLogger("cme.controller")
 
@@ -21,8 +20,9 @@ def update_mdbs_from_crawler(file: Path):
         else:
             persons = database.get_crawler_db()["person"].find({})
     except:
-        raise ConnectionError("Can't connect to remote crawler db. If you're developing locally you must specify a equivalent "
-              "json with --file as fallback.")
+        raise ConnectionError(
+            "Can't connect to remote crawler db. If you're developing locally you must specify a equivalent "
+            "json with --file as fallback.")
 
     for p in persons:
         memberships = []
@@ -74,7 +74,8 @@ def evaluate_newest_sessions(id_list: List[str]):
                 logging.warning(f"Could not find any interactions in session with id '{id}'")
             else:
                 session_id = transcript.session_no
-                logging.info(f"Inserting evaluated session '{session_id}' with {len(transcript.interactions)} interactions into DB")
+                logging.info(
+                    f"Inserting evaluated session '{session_id}' with {len(transcript.interactions)} interactions into DB")
 
                 transcript_dict = transcript.dict(exclude_none=True, exclude_unset=True)
                 transcript_dict['session_id'] = session_id
