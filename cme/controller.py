@@ -59,7 +59,7 @@ def evaluate_newest_sessions(id_list: List[str]):
         current_session = utils.get_crawled_session(id)
         if not current_session:
             logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
-            return
+            continue
 
         file_content = read_transcripts_json(current_session)
         for metadata, inter_candidates in file_content:
