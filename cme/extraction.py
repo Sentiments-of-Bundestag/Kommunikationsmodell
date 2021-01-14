@@ -285,6 +285,7 @@ def retrieve_paragraph_keymap(add_debug_obj: bool = False):
 
     return person_keymap
 
+valid_prepositions = ['Herr', 'Hr.', 'Frau', 'Fr.', 'Dr.', 'Doktor', 'Kollege', 'Kollegin']
 
 def extract_paragraph(text_part: str, paragraph_keymap, add_debug_obj: bool = False):
     text_tokens = text_part.split(" ")
@@ -292,11 +293,15 @@ def extract_paragraph(text_part: str, paragraph_keymap, add_debug_obj: bool = Fa
     receivers = []
     paragraph_keywords = paragraph_keymap.keys()
 
-    for token in text_tokens:
+    for index, token in enumerate(text_tokens):
         if token in paragraph_keywords:
-            receiver = paragraph_keymap[token]
-            if isinstance(receiver, MDB):
-                receivers.append(receiver)
+            preceding_index = index - 1
+            if preceding_index >= 0:
+                preceding_token = text_tokens[preceding_index]
+                if preceding_token in valid_prepositions:
+                    receiver = paragraph_keymap[token]
+                    if isinstance(receiver, MDB):
+                        receivers.append(receiver)
 
     receiver_factions = Faction.in_text(text_part)
 
