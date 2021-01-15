@@ -280,7 +280,7 @@ def retrieve_paragraph_keymap(add_debug_obj: bool = False):
                 person_keymap[keyword] = keyword
     for k in person_keymap.keys():
         people = database.find_many("mdb", {"surname": k})
-        if not len(people) > 1:
+        if len(people) == 1:
             person_keymap[k] = MDB(**people[0])
 
     return person_keymap
@@ -344,7 +344,7 @@ def _extract_all_interactions(
                         reformatted_interaction = reformat_interaction(sender, candidate.speaker, message, False)
                     if reformatted_interaction:
                         if add_debug_obj:
-                            reformatted_interaction["debug"] = {
+                            reformatted_interaction.debug = {
                                 "orig_speaker": candidate.speaker,
                                 "orig_paragraph": candidate.paragraph,
                                 "full_comment_text": full_text,

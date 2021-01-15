@@ -164,6 +164,12 @@ def find_non_ascii_chars(obj: Any) -> Set[str]:
 
 def split_name_str_2(person_str: str) -> Tuple[str, str, str, str]:
     hn = HumanName(person_str)
+    
+    # todo: fails with 'Dr. h. c. Thomas Sattelberger [FDP]', 'Dr. h. c. Hans Michelbach [CDU/CSU]', 'Dr. Dr. h. c. Karl A. Lamers [CDU/CSU]'
+    # todo: 'an Stefan Keuter [AfD]'
+    # todo: 'des Abgeordneten Jörg Cezanne [DIE LINKE]'
+    # todo:  'der Dr. Silke Launert [CDU/CSU]'
+    # todo: '. Michael Grosse-Brömer [CDU/CSU]'
 
     title = hn.title
     forename = hn.first

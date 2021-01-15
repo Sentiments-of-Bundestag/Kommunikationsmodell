@@ -33,6 +33,8 @@ def manual_mode(args):
                 if sub_file.is_file():
                     files.append(sub_file)
 
+    files.sort()
+
     for file in files:
         logger.info("reading \"{}\" now...".format(file.as_posix()))
         transcripts = list()
@@ -40,9 +42,12 @@ def manual_mode(args):
         if file.suffix.lower() == ".json":
             logger.info("reading json based transcript file now...")
             file_content = read_transcripts_json_file(file)
-        else:
+        elif file.suffix.lower() == ".xml":
             logger.info("reading xml based transcript file now...")
             file_content = [read_transcript_xml_file(file)]
+        else:
+            logger.info(f"skipping file {file} as it is not a .json or .xml file ...")
+            continue
 
         logger.info("extracting communication model now...".format(file.as_posix()))
         for metadata, inter_candidates in file_content:
@@ -78,6 +83,8 @@ def manual_mode(args):
                 o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
             with open(out_file.parent / "mdb.json", "w", encoding="utf-8") as o:
                 safe_json_dump(MDB._mdb_runtime_storage, o)
+
+    print("hi")
 
 
 def dump_mode(args):
