@@ -84,8 +84,6 @@ def manual_mode(args):
             with open(out_file.parent / "mdb.json", "w", encoding="utf-8") as o:
                 safe_json_dump(MDB._mdb_runtime_storage, o)
 
-    print("hi")
-
 
 def dump_mode(args):
     if args.database == "crawler":
