@@ -287,6 +287,7 @@ def retrieve_paragraph_keymap(add_debug_obj: bool = False):
 
 valid_prepositions = ['Herr', 'Hr.', 'Frau', 'Fr.', 'Dr.', 'Doktor', 'Kollege', 'Kollegin']
 
+
 def extract_paragraph(text_part: str, paragraph_keymap, add_debug_obj: bool = False):
     text_tokens = text_part.split(" ")
 
@@ -335,13 +336,20 @@ def _extract_all_interactions(
             full_text = candidate.comment.strip("()")
             comment_parts = split_comments(full_text)
             for comment_part in comment_parts:
-                extracted_senders = extract_comment(comment_part)
+                extracted_senders = extract_comment(comment_part, add_debug_obj)
                 for sender, receiver, message in extracted_senders:
                     if receiver:
                         reformatted_interaction = reformat_interaction(sender, receiver, message, False)
                     else:
                         reformatted_interaction = reformat_interaction(sender, candidate.speaker, message, False)
                     if reformatted_interaction:
+                        if add_debug_obj:
+                            reformatted_interaction["debug"] = {
+                                "orig_speaker": candidate.speaker,
+                                "orig_paragraph": candidate.paragraph,
+                                "full_comment_text": full_text,
+                                "part": comment_part}
+
                         reformatted_interactions.append(reformatted_interaction)
 
         else:
@@ -360,202 +368,10 @@ def _extract_all_interactions(
     return reformatted_interactions
 
 
-def _extract_comment_interactions(
-        candidates: List[InteractionCandidate],
-        add_debug_obj: bool = False) -> List[Interaction]:
-    human_sender_re = re.compile(r"(?:Abg\.\s*)?(?P<person>.*\[+.+])")
-    reformatted_interactions = list()
-
-    def _extract(text_part: str):
-        # todo: this can probably be simplified/ improved by extracting some
-        #  generics functions from the following code.
-
-        # converting direct speech separated with a colon
-        if ":" in text_part:
-            ps, pm = [s.strip() for s in text_part.split(":", 1)]
-            pr = None
-
-            # grabbing the special case of a changed receiver during the
-            # comment
-            if ", an" in ps or ", zur" in ps:
-                ps, pr = [s.strip() for s in ps.split(",", 1)]
-
-                pr_match = human_sender_re.search(pr)
-                pfr = Faction.in_text(pr)
-                if pr_match:
-                    pr = [pr_match.group("person")]
-                elif pfr:
-                    pr = pfr
-                else:
-                    logger.warning("not handled alternative receiver \"{}\"".format(pr))
-                    pr = None
-
-            # extraction of the sender or senders
-            phs = human_sender_re.findall(ps)
-            if phs:
-                if len(phs) != 1:
-                    raise RuntimeError(
-                        "Found multiple possible direct speaker ({}) in \"{}\"! "
-                        "This is currently not supported".format(phs, text_part))
-
-                if pr:
-                    for curr_pr in pr:
-                        if isinstance(curr_pr, str):
-                            curr_pr = _build_mdb(curr_pr, add_debug_obj)
-                        elif isinstance(curr_pr, Faction):
-                            curr_pr = curr_pr
-
-                        return [(
-                            _build_mdb(phs[0], add_debug_obj),
-                            curr_pr,
-                            pm)]
-                else:
-                    return [(
-                        _build_mdb(phs[0], add_debug_obj),
-                        None,
-                        pm)]
-            else:
-                pfs = Faction.in_text(ps)
-
-                if len(pfs) == 0 and utils.logging_is_needed(text_part):
-                    logger.warning(
-                        "Found no direct sender in \"{}\"! Ignoring the "
-                        "message...".format(text_part))
-
-                return [(f, None, pm) for f in pfs]
-        # converting non verbal messages like laughing
-        else:
-            words = text_part.split(" ")
-
-            if len(words) == 0:
-                logger.warning(
-                    "Found a no direct speech message without a sender "
-                    "(\"{}\")! Ignoring it now message...".format(text_part))
-                return list()
-
-            last_kw_idx = -1
-            for i, w in enumerate(words):
-                if w in keywords:
-                    last_kw_idx = i
-
-            if last_kw_idx < 0:
-                if utils.logging_is_needed(text_part):
-                    logger.warning(
-                        "Found no handled keyword in a non direct speech message "
-                        "(\"{}\")! Ignoring it now message...".format(text_part))
-                return list()
-
-            relevant_text = " ".join(words[last_kw_idx + 1:])
-            potential_senders = re.split(r"(?:\sund\s)|(?:\ssowie\s)|(?:,\s)", relevant_text)
-
-            found_senders = list()
-            for ps in potential_senders:
-                phs = human_sender_re.findall(ps)
-
-                if phs:
-                    if len(phs) != 1:
-                        raise RuntimeError(
-                            "Found multiple possible direct speaker ({}) in \"{}\"! "
-                            "This is currently not supported".format(phs, text_part))
-
-                    found_senders.append((
-                        _build_mdb(phs[0], add_debug_obj),
-                        None,
-                        text_part))
-
-                else:
-                    pfs = Faction.in_text(ps)
-
-                    if len(pfs) == 0 and utils.logging_is_needed(text_part):
-                        logger.warning(
-                            "Found no direct sender in \"{}\"! Ignoring the "
-                            "message...".format(text_part))
-
-                    found_senders += [(f, None, text_part) for f in pfs]
-
-            return found_senders
-
-    def _split_comments(full_text: str, split_char: str = u"\u2013") -> List[str]:
-        # todo: this fails in rare cases in which the text contains this char.
-        #   maybe there is a smarter way to handle the splitting with respect
-        #   to the possibility of the text containing it
-        #   example: Beifall bei der SPD sowie bei Abgeordneten der
-        #     CDU/CSU – Bettina Stark-Watzinger [FDP]: Jetzt anfängt – nach
-        #     einem Jahr Corona?
-
-        # todo: in at least one case a normal - is used instead of \u2013 to
-        #  separate the comments
-
-        splitted = [full_text]
-        if split_char in full_text:
-            splitted = [p.strip() for p in full_text.split(split_char)]
-        return splitted
-
-    for curr_cand in candidates:
-        full_text = curr_cand.comment.strip("()")
-        text_parts = _split_comments(full_text)
-
-        for part in text_parts:
-            result = _extract(part)
-            if result:
-                for sender, receiver, message in result:
-
-                    # check for malformed senders or receivers
-                    sender_malformed = isinstance(sender, MalformedMDB)
-                    receiver_malformed = isinstance(receiver, MalformedMDB)
-                    if sender_malformed or receiver_malformed:
-                        if sender_malformed and receiver_malformed:
-                            logger.error(
-                                f"Found message \"{message}\" with a broken "
-                                f"sender \"{sender}\" and receiver "
-                                f"\"{receiver}\". skipping it...")
-                        if sender_malformed:
-                            logger.error(
-                                f"Found message \"{message}\" with a broken "
-                                f"sender \"{sender}\". skipping it...")
-                        else:
-                            logger.error(
-                                f"Found message \"{message}\" with a broken "
-                                f"receiver \"{receiver}\". skipping it...")
-
-                        continue
-
-                    if not receiver:
-                        receiver = curr_cand.speaker
-
-                    if not receiver:
-                        logger.warning("Couldn't find a receiver for \"{}\"".format(part))
-                        continue
-
-                    inter = {
-                        "sender": sender,
-                        "receiver": receiver,
-                        "message": message}
-
-                    if add_debug_obj:
-                        inter["debug"] = {
-                            "orig_speaker": curr_cand.speaker,
-                            "orig_paragraph": curr_cand.paragraph,
-                            "full_comment_text": full_text,
-                            "part": part}
-
-                    reformatted_interactions.append(Interaction(**inter))
-            else:
-                if utils.logging_is_needed(part):
-                    logger.warning("Couldn't extract a message from \"{}\". "
-                                   "dropping it now...".format(part))
-
-    return reformatted_interactions
-
-
 def extract_communication_model(
         candidates: List[InteractionCandidate],
         add_debug_objects: bool = False) \
         -> List[Interaction]:
-    # extract comment interactions only
-    # interactions = _extract_comment_interactions(
-    #     list(filter(lambda i: i.comment is not None, candidates)),
-    #     add_debug_obj=add_debug_objects)
 
     # todo: handle inner paragraph comments
     # extract all interactions
