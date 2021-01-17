@@ -2,7 +2,7 @@ version: "3.8"
 services:
   api:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     networks:
       - internal
@@ -21,7 +21,7 @@ services:
       - "SENTIMENT_CLIENT_PASSWORD"
       - "CRAWLER_CLIENT_PASSWORD"
     volumes:
-      - ./resources/plenarprotokolle/open_data:/plenarprotokolle/
+      - ../resources/plenarprotokolle/open_data:/plenarprotokolle/
     ports:
       - "127.0.0.1:9002:9001"
   mongodb:
@@ -34,7 +34,7 @@ services:
     volumes:
       - db-volume:/data/db
       - configdb-volume:/data/configdb
-      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+      - ../mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
     environment:
       - "MONGO_INITDB_ROOT_USERNAME"
       - "MONGO_INITDB_ROOT_PASSWORD"
