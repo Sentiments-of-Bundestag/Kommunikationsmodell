@@ -59,9 +59,9 @@ The cme sub-service is structured as an installable python package. We highly re
 [venv](https://docs.python.org/3/library/venv.html). Either way, you have to install it once with all it's dependencies 
 with:
 
-\```
+```
 pip install .
-\```
+```
 
 or with a added `-e` flag for a dev environment. Using the `-e` flag causes pip to install the package as dev package and therefor changes to the code are available without having to reinstall the package.
 
