@@ -42,6 +42,12 @@ def safe_json_dumps(obj: Any, **kwargs) -> str:
     return json.dumps(obj, **kwargs)
 
 
+def get_safe_datetime(date):
+    if not isinstance(date, datetime):
+        date = datetime.fromisoformat(date)
+    return date
+
+
 def reverse_dict(dict_obj: Dict) -> Dict:
     def _rebuild_dict(potential_dict: Tuple[Tuple]):
         if isinstance(potential_dict, tuple):

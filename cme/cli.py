@@ -5,12 +5,7 @@ from pathlib import Path
 import uvicorn
 from dotenv import load_dotenv
 
-from cme import database, utils
-from cme.controller import init_mdb_collection
-from cme.data import read_transcript_xml_file, read_transcripts_json_file
-from cme.domain import Transcript, CommunicationModel, MDB
-from cme.extraction import extract_communication_model
-from cme.utils import safe_json_dumps, safe_json_dump
+from cme.controller import init_mdb_collection, manual_import, dump_mode
 
 logger = logging.getLogger()
 logger.name = "cme"
@@ -20,109 +15,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def manual_mode(args):
-    if args.dry_run:
-        MDB.set_storage_mode("runtime")
-
-    files = []
-    for file in args.files:
-        if file.is_file():
-            files.append(file)
-        elif file.is_dir():
-            for sub_file in list(file.iterdir()):
-                if sub_file.is_file():
-                    files.append(sub_file)
-
-    files.sort()
-
-    for file in files:
-        logger.info("reading \"{}\" now...".format(file.as_posix()))
-        transcripts = list()
-
-        if file.suffix.lower() == ".json":
-            logger.info("reading json based transcript file now...")
-            file_content = read_transcripts_json_file(file)
-        elif file.suffix.lower() == ".xml":
-            logger.info("reading xml based transcript file now...")
-            file_content = [read_transcript_xml_file(file)]
-        else:
-            logger.info(f"skipping file {file} as it is not a .json or .xml file ...")
-            continue
-
-        logger.info("extracting communication model now...".format(file.as_posix()))
-        for metadata, inter_candidates in file_content:
-
-            transcript = Transcript.from_interactions(
-                metadata=metadata,
-                interactions=extract_communication_model(
-                    candidates=inter_candidates,
-                    add_debug_objects=args.add_debug_objects))
-
-            # insert into DB
-            if not args.dry_run:
-                logger.info("writing transcript into db.")
-                database.update_one(
-                    "session",
-                    {
-                        "session_id": transcript.session_no
-                    },
-                    transcript.dict(exclude_none=True, exclude_unset=True))
-
-            transcripts.append(transcript)
-
-            # notify sentiment group
-            if args.notify and transcript:
-                utils.notify_sentiment_analysis_group([str(transcript.session_no)])
-
-        cm = CommunicationModel(transcripts=transcripts)
-
-        if args.dry_run:
-            out_file: Path = file.with_suffix(".converted.json")
-            logger.info("writing transcripts into {}.".format(out_file.absolute().as_posix()))
-            with open(out_file, "w", encoding="utf-8") as o:
-                o.write(cm.json(exclude_none=True, indent=4, ensure_ascii=False))
-            with open(out_file.parent / "mdb.json", "w", encoding="utf-8") as o:
-                safe_json_dump(MDB._mdb_runtime_storage, o)
-
-
-def dump_mode(args):
-    if args.database == "crawler":
-        db = database.get_crawler_db()
-    else:
-        db = database.get_cme_db()
-
-    if args.list_collections:
-        print(db.list_collection_names())
-    elif args.list_collection_fields:
-        print(list(db[args.collection].find_one().keys()))
-    elif args.collection:
-        if args.index:
-            obj = db[args.collection].find_one({args.index_field: args.index})
-            # _id is an integer so we cast
-            if args.index_field == "_id":
-                obj = db[args.collection].find_one({args.index_field: int(args.index)})
-        else:
-            obj = list()
-            for doc in db[args.collection].find():
-                obj.append(doc)
-
-        if args.output_file:
-            with args.output_file.open("w") as f:
-                safe_json_dump(obj, f, indent=4)
-        else:
-            print(safe_json_dumps(obj, indent=4))
-    else:
-        logger.info(
-            "Dump mode did nothing. This is probably not what you wanted. "
-            "Please check your command line arguments and rerun the tool "
-            "after doing so.")
-
-
-def initialize(args):
-    init_mdb_collection(args.file)
-
-
-def server_mode(args):
+def start_server(args):
     uvicorn_kwargs = {
         "host": args.host,
         "port": args.port,
@@ -148,33 +41,54 @@ def main():
 
     subparsers = parser.add_subparsers()
 
-    manual_parser = subparsers.add_parser("manual", aliases=["m"])
-    manual_parser.add_argument("files", nargs="+", type=Path)
-    manual_parser.add_argument("--dry-run", default=False, action="store_true")
-    manual_parser.add_argument("--add-debug-objects", default=False, action="store_true")
-    manual_parser.add_argument("--notify", default=False, action="store_true")
-    manual_parser.set_defaults(func=manual_mode)
+    manual_parser = subparsers.add_parser("manual", aliases=["m"],
+                                          help='Manually read files for communication extraction.')
+    manual_parser.add_argument("files", nargs="+", type=Path,
+                               help="Path to one or more .json (from Crawler service) or .xml (from official "
+                                    "Bundestag protocols) files. Must contain protocols of Bundestag.")
+    manual_parser.add_argument("--dry-run", default=False, action="store_true",
+                               help="Set to true if you do not want to save data into the database. (Default: False)")
+    manual_parser.add_argument("--add-debug-objects", default=False, action="store_true",
+                               help="While assembling communication data, save debug information (eg where the data "
+                                    "comes from) into the communication objects. (Default: False)")
+    manual_parser.add_argument("--notify", default=False, action="store_true",
+                               help="Notify Group 3/Sentiment Analyses via HTTP request about new protocols. "
+                                    "(Default: False)")
+    manual_parser.set_defaults(func=manual_import)
 
-    dump_parser = subparsers.add_parser("dump", aliases=["d"])
-    dump_parser.add_argument("--database", type=str, default="cme", choices=["cme", "crawler"])
-    dump_parser.add_argument("--index-field", type=str, default="_id")
-    dump_parser.add_argument("--index", type=str, default="")
-    dump_parser.add_argument("--list-collections", default=False, action="store_true")
-    dump_parser.add_argument("--list-collection-fields", default=False, action="store_true")
-    dump_parser.add_argument("--collection", type=str)
-    dump_parser.add_argument("--output-file", type=Path)
+    dump_parser = subparsers.add_parser("dump", aliases=["d"], help="Let's you extract database raw data. "
+                                                                    "Useful for debugging.")
+    dump_parser.add_argument("--database", type=str, default="cme", choices=["cme", "crawler"],
+                             help="Specify the Database you want to dump data from (Default: cme)")
+    dump_parser.add_argument("--index-field", type=str, default="_id",
+                             help="Specify the index field (???). (Default: _id)")
+    dump_parser.add_argument("--index", type=str, default="",
+                             help=" Specify the index. (Default: id)")
+    dump_parser.add_argument("--list-collections", default=False, action="store_true",
+                             help="Set to true if you want to list all available collections. "
+                                  "Needs the --collection option. (Default: False)")
+    dump_parser.add_argument("--list-collection-fields", default=False, action="store_true",
+                             help="Set to true if you want to list all collection fields. "
+                                  "Needs the --collection option. (Default: False)")
+    dump_parser.add_argument("--collection", type=str,
+                             help="Specify the collection you want to operate on.")
+    dump_parser.add_argument("--output-file", type=Path,
+                             help="Specify the output file of the dump.")
     dump_parser.set_defaults(func=dump_mode)
 
-    server_parser = subparsers.add_parser("server", aliases=["s"])
-    server_parser.add_argument("--host", default="127.0.0.1", type=str)
-    server_parser.add_argument("--port", default="9001", type=int)
-    server_parser.add_argument("--reload", default=False, action="store_true")
-    server_parser.set_defaults(func=server_mode)
+    server_parser = subparsers.add_parser("server", aliases=["s"],
+                                          help="Start the server. Includes the REST API as well as documentation.")
+    server_parser.add_argument("--host", default="127.0.0.1", type=str, help="Define the host. (Default: 127.0.0.1)")
+    server_parser.add_argument("--port", default="9001", type=int, help="Define the port. (Default: 9001)")
+    server_parser.add_argument("--reload", default=False, action="store_true",
+                               help="Set to true for reload on file change (Default: False)")
+    server_parser.set_defaults(func=start_server)
 
     init_parser = subparsers.add_parser("init", aliases=["i"],
-                                        help="Generates a new mdb collection locally from the crawler db (default) or file (see --file)")
+                                        help="Generates a new mdb collection locally from the crawler db (default) or"
+                                             " file (see --file)")
     init_parser.add_argument("--file", type=Path, help="Path of a json you want to use instead of the remote crawler")
-    init_parser.set_defaults(func=initialize)
+    init_parser.set_defaults(func=init_mdb_collection)
 
     args = parser.parse_args()
 

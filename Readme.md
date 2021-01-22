@@ -2,47 +2,79 @@
 
 **Group 2**: Kommunikationsmodell
 
-We try to build a communication model out of the parsed XML data from Group 1.
+This service generates communication data out of the parsed XML data from Group 1.
 
-This is pretty much work in progress. You can have a look into the examples folder to see what we are trying to archive.
-
-The desired workflow with teams working before and after the communication model is shown here:
+The workflow and interfaces to Group 1 (Crawer, Entity Extraction) and Group 3 (Semantic analyses) is shown here:
 
 ![Ablaufdiagramm](./resources/Ablaufdiagramm.jpg)
 
 ## Installation
 
-For installation, you need two services
-1. The API, which also contains the `Communication Model Extractor` (or `cme` for short) and all the business logic.
-2. A mongodb.
+This service consists of two sub-services:
+1. The API, which contains the `Communication Model Extractor` (or `cme` for short) and all the business logic.
+2. A mongo database
  
-### API
+Installation depends on whether you want to install it in a productive or a development environment.
 
-The project is structured as an installable python package. We highly recommend setting up a 
-[venv](https://docs.python.org/3/library/venv.html). Either way, you can install it and all it's dependencies with:
+### Production
+
+For production, you start both sub-services as docker services.
+
+First, make sure to fill all `<username>` and `<password>` credentials in the `./deployment/.env.prod.example` file.
+Afterwards, rename it to `.env.prod`.
+
+To start, execute 
+
 ```bash
+./deployment/start_prod.sh
+```
+
+To stop, execute:
+
+```bash
+./deployment/stop_prod.sh
+```
+
+### Development
+
+For the development environment, you start the api service locally (without docker) and the mongodb as a docker service (together with a mongo-express service for debugging).  
+
+#### mongodb
+
+The mongodb can be spin up with
+
+```bash
+docker-compose up
+```
+
+and turned down with 
+
+```bash
+docker-compose down
+```
+
+#### API
+
+The cme sub-service is structured as an installable python package. We highly recommend setting up a 
+[venv](https://docs.python.org/3/library/venv.html). Either way, you have to install it once with all it's dependencies 
+with:
+
+```
 pip install .
 ```
 
-Or, to not reinstall during development, use the dev mode:
-```
-pip install -e .
-```
+or with a added `-e` flag for a dev environment. Using the `-e` flag causes pip to install the package as dev package and therefor changes to the code are available without having to reinstall the package.
 
-Now, `cme` should be an available executable. 
+Now, `cme` should be an available executable. Every time you want to spin up your api, use the script: 
 
-### mongodb
-
-The mongodb can be spin up with
 ```bash
-docker-compose up
-``` 
+./run_api.sh
+```
 
-You can also host it locally, we're using port `27017`
+## CME Options
 
-## Usage
-
-Once the API oder `cme` features a manual or server mode.
+Once the cme package is installed, you can use `cme` features other than the cme api service. 
+This is mostly usefull for debugging. 
 
 ### Manual Mode
 
@@ -53,6 +85,7 @@ cme manual
 ```
 
 ### Server Mode
+
 The server mode will start up our REST API endpoints and will wait for requests from group 1 or 3 
 to do anything. To run `cme` in server mode just run:
 ```bash
