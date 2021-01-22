@@ -14,6 +14,7 @@ keywords = {
     "Beifall", "Zuruf", "Heiterkeit", "Zurufe", "Lachen",
     "Wiederspruch", "Widerspruch", "Gegenrufe", "Buhrufe", "Pfiffe", "Gegenruf"}
 
+valid_prepositions = ['Herr', 'Hr.', 'Frau', 'Fr.', 'Dr.', 'Doktor', 'Kollege', 'Kollegin']
 
 @dataclass
 class MalformedMDB:
@@ -265,6 +266,7 @@ def retrieve_paragraph_keymap(add_debug_obj: bool = False):
     # fetch person list from mdb database
     person_keymap = {}
     mdb_list = MDB.find_known_mdbs()
+    ignored_mdbs = []
     if len(mdb_list) > 0:
         for mdb in mdb_list:
             keyword = mdb['surname']
@@ -275,17 +277,18 @@ def retrieve_paragraph_keymap(add_debug_obj: bool = False):
             # who's been adressed. Even in this solution, we discard any names
             # that appear multiple times in our database, as we again have no
             # system in place to figure out which entity is meant.
-            # TODO fix triple occurence
             if keyword not in person_keymap.keys():
-                person_keymap[keyword] = keyword
+                if keyword not in ignored_mdbs:
+                    person_keymap[keyword] = keyword
+            else:
+                person_keymap.pop(keyword)
+                ignored_mdbs.append(keyword)
     for k in person_keymap.keys():
         people = database.find_many("mdb", {"surname": k})
-        if len(people) == 1:
+        if not len(people) > 1:
             person_keymap[k] = MDB(**people[0])
 
     return person_keymap
-
-valid_prepositions = ['Herr', 'Hr.', 'Frau', 'Fr.', 'Dr.', 'Doktor', 'Kollege', 'Kollegin']
 
 
 def extract_paragraph(text_part: str, paragraph_keymap, add_debug_obj: bool = False):
