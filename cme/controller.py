@@ -114,13 +114,9 @@ def manual_import(args):
 
             # insert into DB
             if not args.dry_run:
-                logger.info("writing transcript into db.")
-                database.update_one(
-                    "session",
-                    {
-                        "session_id": transcript.session_no
-                    },
-                    transcript.dict(exclude_none=True, exclude_unset=True))
+                transcript_dict = transcript.dict(exclude_none=True, exclude_unset=True)
+                logger.info(f"writing transcript with '{len(transcript_dict['interactions'])}' interactions into db.")
+                database.update_one("session", {"session_id": transcript.session_no}, transcript_dict)
 
             transcripts.append(transcript)
 
