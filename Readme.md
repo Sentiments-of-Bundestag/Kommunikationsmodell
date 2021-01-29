@@ -60,8 +60,10 @@ The cme sub-service is structured as an installable python package. We highly re
 with:
 
 ```
-pip install -e .
+pip install .
 ```
+
+or with a added `-e` flag for a dev environment. Using the `-e` flag causes pip to install the package as dev package and therefor changes to the code are available without having to reinstall the package.
 
 Now, `cme` should be an available executable. Every time you want to spin up your api, use the script: 
 
