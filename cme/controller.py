@@ -45,12 +45,11 @@ def update_mdbs_from_crawler(file: Path):
         # will auto create MDB if not yet existent
         MDB.find_and_add_in_storage(p['vorname'], p['nachname'], memberships, p['_id'],
                                     get_safe_datetime(p['geburtsdatum']), p['geburtsort'], p['titel'], p['beruf'],
-                                    initial=True)
+                                    initial=True, created_by="init")
 
 
 def evaluate_newest_sessions(id_list: List[str]):
     for id in id_list:
-        transcripts = []
         current_session = utils.get_crawled_session(id)
         if not current_session:
             logging.warning(f"Could not find the session '{id}' in crawler DB. Won't update...")
@@ -61,8 +60,6 @@ def evaluate_newest_sessions(id_list: List[str]):
             transcript = Transcript.from_interactions(
                 metadata=metadata,
                 interactions=extract_communication_model(inter_candidates))
-
-            transcripts.append(transcript)
 
             # write to DB
             if len(transcript.interactions) == 0:

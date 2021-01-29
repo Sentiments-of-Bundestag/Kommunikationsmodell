@@ -144,10 +144,12 @@ def insert_many(collection_name: str, query: list) -> None:
     collection.insert_many(query)
 
 
-def update_one(collection_name: str, query: dict, update: dict, on_insert=None):
+def update_one(collection_name: str, query: dict, update: dict, on_insert=None, created_by=None):
     db = get_cme_db()
     if on_insert is None:
         on_insert = {}
+    if created_by:
+        update['createdBy'] = created_by
     now = datetime.utcnow().isoformat()
     update['modified'] = now
     on_insert['created'] = now
