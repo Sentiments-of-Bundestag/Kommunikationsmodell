@@ -12,6 +12,7 @@ logger = logging.getLogger("cme.json")
 
 def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> List[InteractionCandidate]:
     candidates = list()
+    not_in_speaker_list = list()
 
     for tp in topic_points:
         if tp["ablaufTyp"].lower() not in ["sitzungsbeginn", "tagesordnungspunkt"]:
@@ -27,9 +28,8 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
             speaker = speaker_map.get(sp["rednerId"])
 
             if not speaker:
-                logger.warning(
-                    f"Speak with id {sp['rednerId']} is a active speaker in "
-                    f"the json file but doesn't exist in the speaker list!")
+                if sp['rednerId'] not in not_in_speaker_list:
+                    not_in_speaker_list.append(sp['rednerId'])
                 continue
 
             for sp_part in sp["redeInhalt"]:
@@ -50,6 +50,7 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
                 else:
                     last_paragraph = sp_part["text"]
 
+    logger.warning(f"Following speakers were not in the speaker list: {not_in_speaker_list}")
     return candidates
 
 
