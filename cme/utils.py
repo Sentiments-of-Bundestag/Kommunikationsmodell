@@ -169,55 +169,21 @@ def find_non_ascii_chars(obj: Any) -> Set[str]:
 
 
 def split_name_str_2(person_str: str) -> Tuple[str, str, str]:
-    hn = HumanName(person_str)
+    from nameparser.config import Constants
 
+    constants = Constants()
+    constants.titles.add("Prof.", "Ing.", "B.Sc.", "h.",  "c.", "e.")
+    constants.prefixes.add(
+        "Baronin", "Baron", "Freiherr", "Frhr.",
+        "Fürstin", "Fürst", "Gräfin", "Graf",
+        "Prinzessin", "Prinz", "von", "van", "de",
+        "vom", "zu")
+
+    hn = HumanName(person_str, constants=constants)
+    
     title = hn.title
     forename = hn.first
-    surname = hn.surnames
-
-    titles = [
-        "Dr. h. c. Dr. - Ing. e. h.", "Dr. - Ing. Dr. h. c.", "Prof. Dr. Dr. h. c.", "Prof. Dr. - Ing.",
-        "Dr. h. c.", "Dr. Dr. h. c.", "Dr. - Ing.", "Prof. Dr.", "Dr."]
-
-    # if another title is found replace existing title with (hopefully) more complex one
-    for possible_title in titles:
-        if forename.startswith(possible_title):
-            title = possible_title
-            forename = forename.replace(possible_title, "").strip()
-        if surname.startswith(possible_title):
-            title = possible_title
-            surname = surname.replace(possible_title, "").strip()
-
-    ge_noble_titles = [
-        "Baronin", "Baron", "Freiherr", "Frhr.", "Fürstin", "Fürst", "Gräfin", "Graf", "Prinzessin", "Prinz"]
-    known_prefixes = [
-        "von und zu", "von der", "de", "van", "vom", "von", "zu"]
-
-    # grab noble title and add to surname_prefix
-    #found_prefixes = []
-    #if surname:
-    #    name_parts = list(surname)
-#
-    #    for m_idx in range(len(name_parts)):
-    #        candidate = name_parts[m_idx]
-    #        if candidate in ge_noble_titles:
-    #            found_prefixes.append(candidate)
-    #            name_parts = name_parts[m_idx + 1:]
-    #            break
-#
-    #    for m_idx in range(len(name_parts)):
-    #        candidate = name_parts[m_idx]
-    #        if candidate in known_prefixes:
-    #            found_prefixes.append(candidate)
-    #            break
-#
-    #for prefix in known_prefixes:
-    #    if surname.startswith(prefix):
-    #        found_prefixes.append(prefix)
-    #        surname = surname.replace(prefix, "").strip()
-    #        break
-
-    #surname_prefix = " ".join(found_prefixes)
+    surname = hn.last
 
     return title, forename, surname
 
@@ -237,7 +203,8 @@ def split_name_str(person_str: str) -> Tuple[str, str, str, str]:
             name_parts.pop(0)
             break
 
-    title, forename, surname = split_name_str_2(" ".join(name_parts))
+    title, forename, surname = split_name_str_2(
+        " ".join(name_parts))
 
     if not forename:
         logging.error(f"splitted a person string ({person_str}) without a forename!")

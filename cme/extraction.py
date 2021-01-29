@@ -81,14 +81,19 @@ def _build_mdb(person_str, add_debug_obj):
     role, title, forename, surname = split_name_str(full_name)
 
     # detection of malformed extractions (will later remove interactions with malformed MDB)
-    malformed = not forename or forename == "" or not surname or surname == ""
-    extended_keywords = keywords.copy()
-    extended_keywords.update(["am", "um", "ne", "wo", "Wo", ".", "-", "der", "die", "das", "des", "von", "an", "h", "h."])
-    for k in extended_keywords:
-        malformed = malformed or k in full_name.split(" ")
-        malformed = malformed or k == forename.lower() or k == surname.lower()
-        if malformed:
-            break
+    # check that forename and surname are filled and have more than one char in them
+    malformed = not forename or len(forename) <= 1
+    malformed = malformed or not surname or len(surname) <= 1
+    # check if forename starts with a small char
+    malformed = malformed or forename[0].islower()
+    if not malformed:
+        extended_keywords = keywords.copy()
+        extended_keywords.update(["am", "um", "ne", "wo", "Wo", ".", "-", "der", "die", "das", "des", "von", "an", "h", "h."])
+        for k in extended_keywords:
+            malformed = malformed or k in full_name.split(" ")
+            malformed = malformed or k == forename.lower() or k == surname.lower()
+            if malformed:
+                break
 
     if malformed:
         return MalformedMDB(
