@@ -50,14 +50,13 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
             if isinstance(el, bs4e.NavigableString):
                 continue
             elif el.name == "name" or (el.name == "p" and el.get("klasse") == "N"):
-                # todo: correctly handle all splitted parts
-                role, title, first_name, surname_prefix, last_name = split_name_str(
-                    cleanup_str(el.getText().rstrip(":")))
+                role, title, first_name, last_name = split_name_str(cleanup_str(el.getText().rstrip(":")))
                 curr_speaker = {
                     "forename": cleanup_str(first_name),
                     "surname": cleanup_str(last_name),
                     "memberships": [(datetime.min, None, Faction.NONE)],
-                    "title": role
+                    "job_title": role,
+                    "title": title
                 }
             elif el.name == "rede":
                 pms += _extract(el, curr_speaker, curr_paragraph)
@@ -77,7 +76,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                         "forename": _safe_get_text(el.redner, "vorname"),
                         "surname": _safe_get_text(el.redner, "nachname"),
                         "memberships": [(datetime.min, None, Faction.from_name(faction_txt))],
-                        "title": _safe_get_text(el.redner, "rolle_lang")}
+                        "job_title": _safe_get_text(el.redner, "rolle_lang")}
 
                 elif category in ["J", "J_1", "O", "Z"]:
                     new_para_str = cleanup_str(el.getText())
@@ -91,7 +90,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                             continue
 
                         speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                            else MDB.find_and_add_in_storage(**curr_speaker)
+                            else MDB.find_and_add_in_storage(**curr_speaker, created_by="manualXmlParser")
 
                         pms.append(InteractionCandidate(
                             speaker=speaker,
@@ -118,7 +117,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                     continue
 
                 speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                    else MDB.find_and_add_in_storage(**curr_speaker)
+                    else MDB.find_and_add_in_storage(**curr_speaker, created_by="manualXmlParser")
 
                 pms.append(InteractionCandidate(
                     speaker=speaker,
@@ -137,7 +136,7 @@ def _extract_paragraphs_xml(root_el: bs4e.Tag) -> List[InteractionCandidate]:
                 return pms
 
             speaker = curr_speaker if isinstance(curr_speaker, MDB) \
-                else MDB.find_and_add_in_storage(**curr_speaker)
+                else MDB.find_and_add_in_storage(**curr_speaker, created_by="manualXmlParser")
 
             pms.append(InteractionCandidate(
                 speaker=speaker,

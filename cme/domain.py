@@ -235,14 +235,21 @@ class MDB(BaseModel):
             title: Optional[str] = None,
             job_title: Optional[str] = None,
             debug_info: Optional[Dict] = None,
-            initial: bool = False) -> "MDB":
+            initial: bool = False,
+            created_by: Optional[str] = None) -> "MDB":
 
         def _find_one(mdb_number=None, forename=None, surname=None) -> Optional[Dict]:
             if cls._storage_type == "mongodb":
                 if mdb_number:
                     return database.find_one("mdb", {"mdb_number": mdb_number})
                 elif forename or surname:
-                    return database.find_one("mdb", {"forename": forename, "surname": surname})
+                    possible_mdbs = database.find_many("mdb", {"forename": forename, "surname": surname})
+                    if len(possible_mdbs) == 1:
+                        return possible_mdbs[0]
+                    elif len(possible_mdbs) > 1:
+                        # use latest mdb (not best solution build else will create many duplicates)
+                        return _get_latest_mdb(possible_mdbs)
+
             elif cls._storage_type == "runtime":
                 if mdb_number:
                     mdb_idx = cls._mdb_runtime_storage_mdb_number_index.get(mdb_number)
@@ -253,9 +260,9 @@ class MDB(BaseModel):
             else:
                 raise RuntimeError("not supported storage_type!")
 
-        def _update_one(key, value):
+        def _update_one(key, value, created_by=None):
             if cls._storage_type == "mongodb":
-                database.update_one("mdb", {"speaker_id": key}, value)
+                database.update_one("mdb", {"speaker_id": key}, value, created_by=created_by)
             elif cls._storage_type == "runtime":
                 mdb_dict = cls._mdb_runtime_storage.get(key, dict())
                 mdb_dict.update(value)
@@ -271,15 +278,20 @@ class MDB(BaseModel):
             else:
                 raise RuntimeError("not supported storage_type!")
 
+        def _get_latest_mdb(possible_mdbs: List[dict]):
+            latest_mdb = possible_mdbs[0]
+            for mdb in possible_mdbs:
+                if datetime.fromisoformat(mdb['modified']) > datetime.fromisoformat(latest_mdb['modified']):
+                    latest_mdb = mdb
+
+            return latest_mdb
+
         mdb = None
         if mdb_number:
             mdb = _find_one(mdb_number=mdb_number)
 
         if not initial and not mdb:
-            # todo: find many
             mdb = _find_one(forename=forename, surname=surname)
-
-            # todo: if find multiple mdb by fore & surname
 
             # if found through name and mdb_number given -> add to document
             if mdb and "mdb_number" not in mdb and mdb_number:
@@ -307,7 +319,8 @@ class MDB(BaseModel):
 
             _update_one(
                 mdb_id,
-                json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)))
+                json.loads(mdb.json(exclude_none=True, indent=4, ensure_ascii=False)),
+                created_by=created_by)
 
         return mdb
 

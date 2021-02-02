@@ -120,6 +120,20 @@ export CRAWL_DB_IP=""
     mac: brew
     linux: systemctl
 
+## Stats
+```
+- stats after evaluating 204 protocols
+
+Interactions total:                 276325
+Interactions only comments:         255000
+
+
+MDB's after init (stammdaten):      4086
+additional MDB's through protocols: 0050
+total MDB's:                        4136
+```
+
+
 ## Main Supporter
 
 * Max Lüdemann @menno4000

@@ -89,7 +89,8 @@ def _convert_speaker(speaker_map: Dict[str, Dict]):
             birthday=birthday,
             birthplace=utils.cleanup_str(v.get("geburtsort")),
             title=utils.cleanup_str(v.get("title")),
-            job_title=utils.cleanup_str(v.get("beruf", "")))
+            job_title=utils.cleanup_str(v.get("beruf", "")),
+            created_by="jsonParse")
 
     return conv_map
 
