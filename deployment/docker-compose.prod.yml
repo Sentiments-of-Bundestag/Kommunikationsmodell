@@ -20,6 +20,7 @@ services:
       - "CME_ADMIN_PASSWORD"
       - "SENTIMENT_CLIENT_PASSWORD"
       - "CRAWLER_CLIENT_PASSWORD"
+      - "SENTIMENT_ADDRESS"
     volumes:
       - ../resources/plenarprotokolle/open_data:/plenarprotokolle/
     ports:
