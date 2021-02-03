@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Tuple
 
-from cme import utils
+from cme import utils, database
 from cme.domain import SessionMetadata, InteractionCandidate, MDB, Faction
 
 logger = logging.getLogger("cme.json")
@@ -28,9 +28,15 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
             speaker = speaker_map.get(sp["rednerId"])
 
             if not speaker:
-                if sp['rednerId'] not in not_in_speaker_list:
-                    not_in_speaker_list.append(sp['rednerId'])
-                continue
+                # try to get speaker through mdb_number from DB
+                speaker = database.find_one('mdb', {'mdb_number': sp["rednerId"]})
+                speaker = MDB(**speaker)
+                logging.info(f"Found speaker through mdb_number from our DB.")
+
+                if not speaker:
+                    if sp['rednerId'] not in not_in_speaker_list:
+                        not_in_speaker_list.append(sp['rednerId'])
+                    continue
 
             for sp_part in sp["redeInhalt"]:
                 part_type = sp_part["typ"]
