@@ -30,13 +30,12 @@ def _get_candidates(topic_points: List[Dict], speaker_map: Dict[str, MDB]) -> Li
             if not speaker:
                 # try to get speaker through mdb_number from DB
                 speaker = database.find_one('mdb', {'mdb_number': sp["rednerId"]})
-                if speaker:
-                    speaker = MDB(**speaker)
-                    logging.info(f"Found speaker '{sp['rednerId']}' through mdb_number from our DB.")
-                else:
+                if not speaker:
                     if sp['rednerId'] not in not_in_speaker_list:
                         not_in_speaker_list.append(sp['rednerId'])
                     continue
+                speaker = MDB(**speaker)
+                speaker_map[sp['rednerId']] = speaker
 
             for sp_part in sp["redeInhalt"]:
                 part_type = sp_part["typ"]
